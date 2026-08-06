@@ -381,9 +381,17 @@ def get_lan_ip():
         s.close()
 
 
+def _is_ascii(text: str) -> bool:
+    try:
+        text.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 def inject_text(text):
     """Inject text using the chosen method."""
-    if METHOD == "type":
+    if METHOD == "type" and _is_ascii(text):
         subprocess.run(
             ["ydotool", "type", "--key-delay", "0", "--", text],
             check=True,
@@ -391,20 +399,19 @@ def inject_text(text):
         )
     else:
         subprocess.run(
-            ["wl-copy", "-o", "--", text],
+            ["wl-copy", "--", text],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=True,
             timeout=5,
         )
-        if AUTO_PASTE:
-            time.sleep(0.1)
-            subprocess.run(
-                ["ydotool", "key", "--delay", "100", "ctrl+v"],
-                check=True,
-                timeout=5,
-            )
+        time.sleep(0.2)
+        subprocess.run(
+            ["ydotool", "key", "-d", "100", "29:1", "47:1", "47:0", "29:0"],
+            check=True,
+            timeout=5,
+        )
 
 
 def check_token():
