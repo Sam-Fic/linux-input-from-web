@@ -235,22 +235,7 @@ HTML_TEMPLATE = r"""
     min-height: 1.2em;
     line-height: 1;
   }
-  .ping {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--mdui-color-outline, #79747e);
-    margin-top: 0;
-    transition: background 0.3s;
-  }
-  .ping.active {
-    background: var(--mdui-color-tertiary, #7d5260);
-  }
-  .ping.error {
-    background: var(--mdui-color-error, #b3261e);
-  }
-  mdui-button[disabled], mdui-button-icon[disabled] {
+￼  mdui-button[disabled], mdui-button-icon[disabled] {
     opacity: 0.38;
     pointer-events: none;
   }
@@ -279,7 +264,6 @@ HTML_TEMPLATE = r"""
       <div class="nav-mid">
         <div class="nav-info" id="nav-info"></div>
         <div class="status" id="status"></div>
-        <span class="ping" id="ping"></span>
       </div>
     </div>
     <mdui-button-icon id="nav-right" icon="chevron_right" disabled></mdui-button-icon>
@@ -429,9 +413,8 @@ function clearText() {
 async function doSend() {
   const text = txt.value;
   if (!text) return;
-  btn.disabled = true;
-  btn.icon = "hourglass_empty";
-  btn.textContent = "Sending...";
+  isSending = true;
+  updateButtonState();
   try {
     const res = await fetch("/send?token=" + encodeURIComponent(token), {
       method: "POST",
@@ -444,29 +427,16 @@ async function doSend() {
       draft = "";
       txt.value = "";
       updateNav();
-      btn.textContent = "Sent!";
-      setTimeout(() => {
-        btn.icon = "send";
-        btn.textContent = "SEND";
-        btn.disabled = false;
-      }, 800);
+      showStatus("Sent!");
       txt.focus();
     } else {
-      btn.textContent = "Error: " + res.status;
-      setTimeout(() => {
-        btn.icon = "send";
-        btn.textContent = "SEND";
-        btn.disabled = false;
-      }, 1500);
+      showStatus("Error: " + res.status);
     }
   } catch(e) {
-    btn.textContent = "Network error";
-    setTimeout(() => {
-      btn.icon = "send";
-      btn.textContent = "SEND";
-      btn.disabled = false;
-    }, 1500);
+    showStatus("Network error");
   }
+  isSending = false;
+  updateButtonState();
 }
 
 function showStatus(msg) {
@@ -480,16 +450,37 @@ function showStatus(msg) {
   }
 }
 
-/* --- Ping --- */
-const pingEl = document.getElementById("ping");
+/* --- Connection State --- */
+let isConnected = false;
+let isSending = false;
+
+function updateButtonState() {
+  if (isSending) {
+    btn.disabled = true;
+    btn.icon = "hourglass_empty";
+    btn.textContent = "Sending...";
+  } else if (!isConnected) {
+    btn.disabled = true;
+    btn.icon = "wifi_off";
+    btn.textContent = "Offline";
+  } else {
+    btn.disabled = false;
+    btn.icon = "send";
+    btn.textContent = "SEND";
+  }
+}
+
 setInterval(async () => {
   try {
     const r = await fetch("/ping", {signal: AbortSignal.timeout(3000)});
-    pingEl.className = r.ok ? "ping active" : "ping error";
+    isConnected = r.ok;
   } catch(e) {
-    pingEl.className = "ping error";
+    isConnected = false;
   }
+  updateButtonState();
 }, 1000);
+
+updateButtonState();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
