@@ -216,6 +216,11 @@ HTML_TEMPLATE = r"""
     justify-content: center;
     gap: 6px;
   }
+  .nav-mid {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
   .nav-info {
     font-size: 0.9rem;
     color: var(--mdui-color-on-surface-variant, #49454f);
