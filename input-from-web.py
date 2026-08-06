@@ -195,7 +195,6 @@ HTML_TEMPLATE = r"""
     max-height: none !important;
     resize: none;
     overflow-y: auto;
-    padding-top: 16px;
   }
   /* Prevent label clipping when floating */
   .input-field mdui-text-field::part(label) {
@@ -427,7 +426,12 @@ async function doSend() {
       draft = "";
       txt.value = "";
       updateNav();
-      showStatus("Sent!");
+      btn.icon = "check";
+      btn.textContent = "Sent!";
+      setTimeout(() => {
+        isSending = false;
+        updateButtonState();
+      }, 800);
       txt.focus();
     } else {
       showStatus("Error: " + res.status);
