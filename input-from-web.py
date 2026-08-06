@@ -407,7 +407,10 @@ def inject_text(text):
             timeout=5,
         )
         time.sleep(0.1)
-        if AUTO_PASTE or not _is_ascii(text):
+        # When method is "type" but text is non-ASCII, we fell back to clipboard.
+        # Auto-paste is required since the user expected direct typing.
+        # When method is "clipboard", respect the AUTO_PASTE setting.
+        if AUTO_PASTE or (METHOD == "type" and not _is_ascii(text)):
             subprocess.run(
                 ["ydotool", "key", "-d", "100", "29:1", "47:1", "47:0", "29:0"],
                 check=True,
