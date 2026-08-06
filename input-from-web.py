@@ -244,7 +244,7 @@ HTML_TEMPLATE = r"""
 <div class="app-container">
   <div class="btn-row">
     <mdui-button id="btn" variant="filled" icon="send">SEND</mdui-button>
-    <mdui-button-icon id="clear-btn" icon="backspace"></mdui-button-icon>
+    <mdui-button-icon id="clear-btn" icon="delete"></mdui-button-icon>
   </div>
 
   <div class="input-field">
