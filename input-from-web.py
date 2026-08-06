@@ -406,12 +406,13 @@ def inject_text(text):
             check=True,
             timeout=5,
         )
-        time.sleep(0.2)
-        subprocess.run(
-            ["ydotool", "key", "-d", "100", "29:1", "47:1", "47:0", "29:0"],
-            check=True,
-            timeout=5,
-        )
+        time.sleep(0.1)
+        if AUTO_PASTE or not _is_ascii(text):
+            subprocess.run(
+                ["ydotool", "key", "-d", "100", "29:1", "47:1", "47:0", "29:0"],
+                check=True,
+                timeout=5,
+            )
 
 
 def check_token():
