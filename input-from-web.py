@@ -136,50 +136,159 @@ HTML_TEMPLATE = r"""
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
-<meta name="theme-color" content="#1a1a1a">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta name="theme-color" content="#6750A4">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon.png">
 <link rel="apple-touch-icon" href="/icon.png">
 <title>Input</title>
+
+<!-- Material Design 3 (mdui) Fonts & CSS -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/mdui@2/mdui.css">
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;font-family:system-ui,sans-serif;background:#1a1a1a;color:#fff}
-.container{display:flex;flex-direction:column;height:100dvh;padding:8px;gap:8px}
-.btn-row{display:flex;gap:8px;flex-shrink:0}
-#btn{flex:1;padding:16px;font-size:1.2rem;font-weight:bold;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer}
-#btn:active{background:#1d4ed8}
-#btn:disabled{background:#555}
-#clear-btn{width:56px;padding:16px;font-size:1.2rem;font-weight:bold;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;flex-shrink:0}
-#clear-btn:active{background:#b91c1c}
-textarea{flex:1;width:100%;padding:12px;font-size:1rem;background:#262626;color:#fff;border:1px solid #444;border-radius:8px;resize:none}
-textarea:focus{outline:none;border-color:#2563eb}
-.nav-row{display:flex;gap:8px;flex-shrink:0;align-items:center}
-.nav-btn{width:56px;padding:16px;font-size:1.2rem;font-weight:bold;background:#444;color:#fff;border:none;border-radius:8px;cursor:pointer;flex-shrink:0}
-.nav-btn:active:not(:disabled){background:#666}
-.nav-btn:disabled{background:#2a2a2a;color:#555;cursor:default}
-.nav-mid{flex:1;text-align:center}
-.nav-info{font-size:0.8rem;color:#666}
-.status{font-size:0.85rem;color:#888}
-.ping{display:inline-block;width:10px;height:10px;border-radius:50%;background:#555;vertical-align:middle;margin-left:6px}
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    /* mdui handles background colors via its theme tokens, fallback provided */
+    background-color: var(--mdui-color-surface-container, #f3edf7);
+    font-family: 'Roboto', sans-serif;
+    color: var(--mdui-color-on-surface, #1d1b20);
+    transition: background-color 0.3s, color 0.3s;
+  }
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    padding: 16px;
+    box-sizing: border-box;
+    gap: 12px;
+  }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+    align-items: center;
+  }
+  .btn-row mdui-button {
+    flex: 1;
+  }
+  .input-field {
+    flex: 1;
+    display: flex;
+    min-height: 150px;
+    position: relative;
+    overflow: visible;
+  }
+  .input-field mdui-text-field {
+    width: 100%;
+    flex: 1;
+  }
+  /* Target the internal textarea via CSS part for full height */
+  .input-field mdui-text-field::part(input) {
+    height: 100%;
+    max-height: none !important;
+    resize: none;
+    overflow-y: auto;
+    padding-top: 16px;
+  }
+  /* Prevent label clipping when floating */
+  .input-field mdui-text-field::part(label) {
+    z-index: 1;
+  }
+  .nav-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 8px 0;
+  }
+  .nav-center {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .nav-info {
+    font-size: 0.9rem;
+    color: var(--mdui-color-on-surface-variant, #49454f);
+    line-height: 1;
+    min-width: 40px;
+    text-align: center;
+  }
+  .status {
+    font-size: 0.85rem;
+    color: var(--mdui-color-primary, #6750A4);
+    font-weight: 500;
+    min-height: 1.2em;
+    line-height: 1;
+  }
+  .ping {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--mdui-color-outline, #79747e);
+    margin-top: 0;
+    transition: background 0.3s;
+  }
+  .ping.active {
+    background: var(--mdui-color-tertiary, #7d5260);
+  }
+  .ping.error {
+    background: var(--mdui-color-error, #b3261e);
+  }
+  mdui-button[disabled], mdui-button-icon[disabled] {
+    opacity: 0.38;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
-<div class="container">
-<div class="btn-row">
-  <button id="btn">SEND</button>
-  <button id="clear-btn">X</button>
+<div class="app-container">
+  <div class="btn-row">
+    <mdui-button id="btn" variant="filled" icon="send">SEND</mdui-button>
+    <mdui-button-icon id="clear-btn" icon="backspace"></mdui-button-icon>
+  </div>
+
+  <div class="input-field">
+    <mdui-text-field 
+      id="txt" 
+      rows="10"
+      variant="outlined" 
+      label="Type here..." 
+      autofocus
+    ></mdui-text-field>
+  </div>
+
+  <div class="nav-row">
+    <mdui-button-icon id="nav-left" icon="chevron_left" disabled></mdui-button-icon>
+    <div class="nav-center">
+      <div class="nav-mid">
+        <div class="nav-info" id="nav-info"></div>
+        <div class="status" id="status"></div>
+        <span class="ping" id="ping"></span>
+      </div>
+    </div>
+    <mdui-button-icon id="nav-right" icon="chevron_right" disabled></mdui-button-icon>
+  </div>
 </div>
-<textarea id="txt" placeholder="Type here..." autofocus></textarea>
-<div class="nav-row">
-  <button class="nav-btn" id="nav-left" disabled>&lt;</button>
-  <div class="nav-mid"><div class="nav-info" id="nav-info"></div><div class="status" id="status"></div><span class="ping" id="ping"></span></div>
-  <button class="nav-btn" id="nav-right" disabled>&gt;</button>
-</div>
-</div>
+
+<!-- Material Design 3 (mdui) JS -->
+<script src="https://unpkg.com/mdui@2/mdui.global.js"></script>
 <script>
+// Apply Material 3 Dynamic Color (Material You)
+// #6750A4 is the baseline M3 seed color. mdui automatically extracts and generates 
+// the full tonal color palette (Primary, Secondary, Surface, etc.) and handles Dark Mode automatically.
+mdui.setColorScheme('#6750A4');
+
 const CONFIG = __CONFIG__;
 
 /* --- Token: URL query > localStorage > null --- */
@@ -204,14 +313,7 @@ clearBtn.addEventListener("click", clearText);
 navLeft.addEventListener("click", histBack);
 navRight.addEventListener("click", histForward);
 
-/* --- History ---
- * history[] holds sent messages. The user always edits a "draft" buffer.
- * histIdx points to the currently viewed entry:
- *   histIdx === history.length  =>  draft buffer (empty unsent)
- *   histIdx < history.length    =>  viewing a past message
- * Sending from a past entry: if text differs from original, a new entry
- * is appended; if identical, it still appends a new entry (re-send).
- */
+/* --- History --- */
 const history = [];
 let histIdx = 0;
 let draft = "";
@@ -311,6 +413,8 @@ txt.addEventListener("input", () => {
 });
 
 /* --- Actions --- */
+let statusTimer = null;
+
 function clearText() {
   txt.value = "";
   txt.focus();
@@ -321,6 +425,7 @@ async function doSend() {
   const text = txt.value;
   if (!text) return;
   btn.disabled = true;
+  btn.icon = "hourglass_empty";
   btn.textContent = "Sending...";
   try {
     const res = await fetch("/send?token=" + encodeURIComponent(token), {
@@ -334,21 +439,40 @@ async function doSend() {
       draft = "";
       txt.value = "";
       updateNav();
-      showStatus("Sent!");
+      btn.textContent = "Sent!";
+      setTimeout(() => {
+        btn.icon = "send";
+        btn.textContent = "SEND";
+        btn.disabled = false;
+      }, 800);
       txt.focus();
     } else {
-      showStatus("Error: " + res.status);
+      btn.textContent = "Error: " + res.status;
+      setTimeout(() => {
+        btn.icon = "send";
+        btn.textContent = "SEND";
+        btn.disabled = false;
+      }, 1500);
     }
   } catch(e) {
-    showStatus("Network error");
+    btn.textContent = "Network error";
+    setTimeout(() => {
+      btn.icon = "send";
+      btn.textContent = "SEND";
+      btn.disabled = false;
+    }, 1500);
   }
-  btn.disabled = false;
-  btn.textContent = "SEND";
 }
 
 function showStatus(msg) {
-  statusEl.textContent = msg;
-  if (msg) setTimeout(() => { statusEl.textContent = ""; }, 2000);
+  if (statusTimer) clearTimeout(statusTimer);
+  if (msg) {
+    statusEl.textContent = msg;
+    statusTimer = setTimeout(() => {
+      statusEl.textContent = "";
+      statusTimer = null;
+    }, 2000);
+  }
 }
 
 /* --- Ping --- */
@@ -356,9 +480,9 @@ const pingEl = document.getElementById("ping");
 setInterval(async () => {
   try {
     const r = await fetch("/ping", {signal: AbortSignal.timeout(3000)});
-    pingEl.style.background = r.ok ? "#22c55e" : "#ef4444";
+    pingEl.className = r.ok ? "ping active" : "ping error";
   } catch(e) {
-    pingEl.style.background = "#ef4444";
+    pingEl.className = "ping error";
   }
 }, 1000);
 
