@@ -141,8 +141,8 @@ HTML_TEMPLATE = r"""
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" href="/icon.png">
-<link rel="apple-touch-icon" href="/icon.png">
+<link rel="icon" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>Input</title>
 
 <!-- Material Design 3 (mdui) Fonts & CSS -->
@@ -560,13 +560,13 @@ def manifest():
         "display": "standalone",
         "background_color": "#1a1a1a",
         "theme_color": "#1a1a1a",
-        "icons": [{"src": "/icon.png", "sizes": "512x512", "type": "image/png"}],
+        "icons": [{"src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml"}],
     }
 
 
-@app.route("/icon.png")
+@app.route("/icon.svg")
 def icon():
-    return send_from_directory(SCRIPT_DIR, "icon.png", mimetype="image/png")
+    return send_from_directory(SCRIPT_DIR, "icon.svg", mimetype="image/svg+xml")
 
 
 @app.route("/sw.js")

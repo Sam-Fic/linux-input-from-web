@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="clipHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9FA8DA;stop-opacity:0"/>
+      <stop offset="50%" style="stop-color:#9FA8DA;stop-opacity:0.5"/>
+      <stop offset="100%" style="stop-color:#9FA8DA;stop-opacity:0"/>
+    </linearGradient>
+    <clipPath id="clipBodyClip">
+      <rect x="23" y="29" width="78" height="86" rx="13" ry="13"/>
+    </clipPath>
+    
+    <linearGradient id="orangeHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFE082;stop-opacity:0"/>
+      <stop offset="50%" style="stop-color:#FFE082;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#FFE082;stop-opacity:0"/>
+    </linearGradient>
+    <clipPath id="orangeClipClip">
+      <rect x="42" y="19" width="40" height="16" rx="6" ry="6"/>
+    </clipPath>
+
+    <linearGradient id="paperHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+    </linearGradient>
+    <clipPath id="paperBodyClip">
+      <rect x="29" y="29" width="66" height="74" rx="7" ry="7"/>
+    </clipPath>
+
+    <filter id="cornerBlur" x="-20%" y="-10%" width="140%" height="120%">
+      <feGaussianBlur stdDeviation="0.3 0"/>
+    </filter>
+  </defs>
+
+  <!-- 剪贴板底板 (蓝色) 厚度 -->
+  <rect x="23" y="29" width="78" height="86" rx="13" fill="#3949AB"/>
+  <rect x="23" y="28" width="78" height="86" rx="13" fill="#3F51B5"/>
+  <rect x="23" y="27" width="78" height="86" rx="13" fill="#3949AB"/>
+  <rect x="23" y="26" width="78" height="86" rx="13" fill="#3F51B5"/>
+  <rect x="23" y="25" width="78" height="86" rx="13" fill="#3949AB"/>
+  <rect x="23" y="24" width="78" height="86" rx="13" fill="#3F51B5"/>
+  <rect x="23" y="23" width="78" height="86" rx="13" fill="#3949AB"/>
+  <rect x="23" y="22" width="78" height="86" rx="13" fill="#3F51B5"/>
+  
+  <g clip-path="url(#clipBodyClip)" filter="url(#cornerBlur)">
+    <rect x="23" y="29" width="12" height="86" fill="url(#clipHighlight)"/>
+    <rect x="89" y="29" width="12" height="86" fill="url(#clipHighlight)"/>
+  </g>
+
+  <!-- 剪贴板底板 (蓝色) 主体 -->
+  <rect x="23" y="21" width="78" height="88" rx="13" fill="#5C6BC0"/>
+
+  <!-- 纸张厚度 -->
+  <rect x="29" y="29" width="66" height="74" rx="7" fill="#90A4AE"/>
+  <rect x="29" y="28" width="66" height="74" rx="7" fill="#B0BEC5"/>
+
+  <g clip-path="url(#paperBodyClip)" filter="url(#cornerBlur)">
+    <rect x="29" y="29" width="10" height="74" fill="url(#paperHighlight)"/>
+    <rect x="85" y="29" width="10" height="74" fill="url(#paperHighlight)"/>
+  </g>
+
+  <!-- 剪贴板主体 (白纸) -->
+  <rect x="29" y="27" width="66" height="74" rx="7" fill="#FFFFFF"/>
+
+  <!-- 夹子厚度 -->
+  <rect x="42" y="19" width="40" height="16" rx="6" fill="#C77800"/>
+  <rect x="42" y="18" width="40" height="16" rx="6" fill="#D88B00"/>
+  <rect x="42" y="17" width="40" height="16" rx="6" fill="#C77800"/>
+
+  <g clip-path="url(#orangeClipClip)" filter="url(#cornerBlur)">
+    <rect x="42" y="19" width="6" height="16" fill="url(#orangeHighlight)"/>
+    <rect x="76" y="19" width="6" height="16" fill="url(#orangeHighlight)"/>
+  </g>
+
+  <!-- 夹子 -->
+  <rect x="42" y="16" width="40" height="16" rx="6" fill="#F6A83C"/>
+
+  <!-- 文本行 -->
+  <g stroke="#C7CDEA" stroke-width="6" stroke-linecap="round">
+    <line x1="38" y1="48" x2="86" y2="48"/>
+    <line x1="38" y1="64" x2="82" y2="64"/>
+    <line x1="38" y1="80" x2="78" y2="80"/>
+  </g>
+
+  <!-- 语音气泡厚度 -->
+  <circle cx="90" cy="92" r="26" fill="#1565C0"/>
+
+  <!-- 语音气泡 -->
+  <circle cx="90" cy="90" r="26" fill="#4C8DF5"/>
+
+  <!-- 麦克风厚度 -->
+  <rect x="85" y="78" width="10" height="18" rx="5" fill="#1565C0"/>
+
+  <!-- 麦克风 -->
+  <rect x="85" y="76" width="10" height="18" rx="5" fill="#FFFFFF"/>
+  
+  <g stroke="#1565C0" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M80 92 a10 10 0 0 0 20 0"/>
+    <line x1="90" y1="102" x2="90" y2="108"/>
+  </g>
+  <g stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M80 90 a10 10 0 0 0 20 0"/>
+    <line x1="90" y1="100" x2="90" y2="106"/>
+  </g>
+</svg>
