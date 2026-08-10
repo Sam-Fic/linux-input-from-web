@@ -11,4 +11,12 @@ if ! pgrep -x ydotoold > /dev/null 2>&1; then
     echo "ydotoold started."
 fi
 
+# Ensure virtual environment exists
+if [ ! -d "$DIR/venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv "$DIR/venv"
+    echo "Installing dependencies..."
+    "$DIR/venv/bin/pip" install --quiet flask qrcode
+fi
+
 exec "$DIR/venv/bin/python" "$DIR/input-from-web.py" "$@"

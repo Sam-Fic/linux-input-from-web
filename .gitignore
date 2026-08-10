@@ -1,3 +1,11 @@
 venv/
 __pycache__/
 *.pyc
+
+# Debian packaging build artifacts (managed by debhelper)
+debian/.debhelper/
+debian/files
+debian/*.substvars
+debian/*.buildinfo
+debian/debhelper-build-stamp
+debian/input-from-web/
