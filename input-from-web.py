@@ -5,6 +5,8 @@ import argparse
 import json
 import os
 import secrets
+import shlex
+import shutil
 import socket
 import subprocess
 import sys
@@ -35,6 +37,84 @@ AUTO_PASTE = False
 PROFILE = {}
 
 CONFIG_PATH = os.path.expanduser("~/.input-from-web-conf.json")
+
+AUTOSTART_DIR = os.path.expanduser("~/.config/autostart")
+AUTOSTART_FILE = os.path.join(AUTOSTART_DIR, "input-from-web.desktop")
+
+# Terminal candidates across distributions/desktops.
+# Each entry: (command, template) where template uses {cmd} for the script to run.
+# We prefer `-- bash -c '...'` style; konsole/xfce4-terminal use `-e`.
+TERMINAL_CANDIDATES = [
+    # (name,        executable,          arg_style)
+    # arg_style: "bash_c"  ->  exe -- bash -c 'CMD'
+    #            "dash_e"  ->  exe -e 'CMD'
+    ("ptyxis",            "ptyxis",            "bash_c"),
+    ("gnome-terminal",    "gnome-terminal",    "bash_c"),
+    ("konsole",           "konsole",           "dash_e"),
+    ("xfce4-terminal",    "xfce4-terminal",    "dash_e"),
+    ("mate-terminal",     "mate-terminal",     "bash_c"),
+    ("lxterminal",        "lxterminal",        "dash_e"),
+    ("terminator",        "terminator",        "bash_c"),
+    ("alacritty",         "alacritty",         "dash_e"),
+    ("x-terminal-emulator","x-terminal-emulator","dash_e"),
+]
+
+
+def detect_terminal():
+    """Return (exe, arg_style) for the first available terminal, or (None, None)."""
+    for _name, exe, style in TERMINAL_CANDIDATES:
+        if shutil.which(exe):
+            return exe, style
+    return None, None
+
+
+def build_desktop_exec(terminal_exe, arg_style, title, script_cmd):
+    """Build the Exec= line for the autostart .desktop file."""
+    inner = f"bash -lc {shlex.quote(script_cmd)}"
+    if arg_style == "bash_c":
+        # e.g. ptyxis -T "Title" -- bash -lc '...'
+        return f'{terminal_exe} -T {shlex.quote(title)} -- {inner}'
+    else:
+        # e.g. konsole -e 'bash -lc ...'
+        return f"{terminal_exe} -e {shlex.quote(inner)}"
+
+
+DESKTOP_TEMPLATE = """\
+[Desktop Entry]
+Type=Application
+Name=Input from Web
+Comment=Type on your phone, inject into focused desktop app
+Exec={exec_line}
+Terminal=true
+X-GNOME-Autostart-enabled=true
+"""
+
+
+def install_autostart():
+    """Create the user autostart .desktop entry. Returns (ok, message)."""
+    terminal_exe, arg_style = detect_terminal()
+    if not terminal_exe:
+        return False, ("No supported terminal emulator found. Install gnome-terminal, "
+                       "konsole, xfce4-terminal, ptyxis, or another and try again.")
+    script_cmd = f'"{SCRIPT_DIR}/run.sh"'
+    exec_line = build_desktop_exec(terminal_exe, arg_style, "Input from Web", script_cmd)
+    os.makedirs(AUTOSTART_DIR, exist_ok=True)
+    content = DESKTOP_TEMPLATE.format(exec_line=exec_line)
+    with open(AUTOSTART_FILE, "w") as f:
+        f.write(content)
+    return True, f"Autostart installed: {AUTOSTART_FILE}\n  Exec: {exec_line}"
+
+
+def uninstall_autostart():
+    """Remove the user autostart entry if present. Returns (ok, message)."""
+    if os.path.exists(AUTOSTART_FILE):
+        os.remove(AUTOSTART_FILE)
+        return True, f"Autostart removed: {AUTOSTART_FILE}"
+    return True, "Autostart was not installed (nothing to remove)."
+
+
+def autostart_installed():
+    return os.path.exists(AUTOSTART_FILE)
 
 DEFAULT_CONFIG = {
     "_comment": [
@@ -237,6 +317,12 @@ HTML_TEMPLATE = r"""
     opacity: 0.38;
     pointer-events: none;
   }
+  .autostart-row {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 4px 0;
+  }
 </style>
 </head>
 <body>
@@ -265,6 +351,10 @@ HTML_TEMPLATE = r"""
       </div>
     </div>
     <mdui-button-icon id="nav-right" icon="chevron_right" disabled></mdui-button-icon>
+  </div>
+
+  <div class="autostart-row">
+    <mdui-switch id="autostart-switch" icon="power_settings_new">开机自启（登录弹终端）</mdui-switch>
   </div>
 </div>
 
@@ -485,6 +575,51 @@ setInterval(async () => {
 
 updateButtonState();
 
+/* --- Autostart toggle --- */
+const autostartSwitch = document.getElementById("autostart-switch");
+
+async function refreshAutostart() {
+  try {
+    const r = await fetch("/autostart?token=" + encodeURIComponent(token));
+    if (r.ok) {
+      const data = await r.json();
+      autostartSwitch.checked = !!data.installed;
+    }
+  } catch (e) { /* ignore */ }
+}
+
+autostartSwitch.addEventListener("change", async () => {
+  const want = autostartSwitch.checked;
+  const action = want ? "install" : "uninstall";
+  autostartSwitch.disabled = true;
+  try {
+    const r = await fetch("/autostart?token=" + encodeURIComponent(token), {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({action: action}),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      if (data.ok) {
+        showStatus(want ? "已开启开机自启" : "已关闭开机自启");
+      } else {
+        autostartSwitch.checked = !want;
+        showStatus("失败: " + (data.message || "未知错误"));
+      }
+    } else {
+      autostartSwitch.checked = !want;
+      showStatus("错误: " + r.status);
+    }
+  } catch (e) {
+    autostartSwitch.checked = !want;
+    showStatus("网络错误");
+  } finally {
+    autostartSwitch.disabled = false;
+  }
+});
+
+refreshAutostart();
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
 }
@@ -600,6 +735,22 @@ def send():
     return {"ok": True}
 
 
+@app.route("/autostart", methods=["GET", "POST"])
+def autostart():
+    # Protected by the security token, like /send.
+    check_token()
+    if request.method == "GET":
+        return {"installed": autostart_installed()}
+    action = (request.get_json(force=True, silent=True) or {}).get("action")
+    if action == "install":
+        ok, msg = install_autostart()
+        return {"ok": ok, "message": msg}
+    elif action == "uninstall":
+        ok, msg = uninstall_autostart()
+        return {"ok": ok, "message": msg}
+    return {"error": "unknown action"}, 400
+
+
 def main():
     global METHOD, USE_TOKEN, PERMANENT_LINK, AUTO_PASTE, TOKEN, PROFILE
     parser = argparse.ArgumentParser(description="Type on your phone, paste on your desktop.")
@@ -615,7 +766,25 @@ def main():
     parser.add_argument("--permanent-link-refresh", action="store_true",
                         help="Replace the stored permanent token with a new one. "
                              "Implies --permanent-link.")
+    parser.add_argument("--install-autostart", action="store_true",
+                        help="Install a user autostart entry (opens a terminal with the "
+                             "QR code on login). Detects the available terminal emulator.")
+    parser.add_argument("--uninstall-autostart", action="store_true",
+                        help="Remove the user autostart entry if present.")
     args = parser.parse_args()
+
+    # One-shot autostart management — exit after performing the action.
+    if args.install_autostart or args.uninstall_autostart:
+        if args.install_autostart and args.uninstall_autostart:
+            print("Error: --install-autostart and --uninstall-autostart are mutually exclusive.",
+                  file=sys.stderr)
+            sys.exit(1)
+        if args.install_autostart:
+            ok, msg = install_autostart()
+        else:
+            ok, msg = uninstall_autostart()
+        print(msg)
+        sys.exit(0 if ok else 1)
 
     PROFILE, profile_name, full_config = load_or_create_config(args.profile)
 
