@@ -147,7 +147,6 @@ HTML_TEMPLATE = r"""
 
 <!-- Material Design 3 (mdui) Fonts & CSS -->
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/mdui@2/mdui.css">
 
 <style>
@@ -157,7 +156,7 @@ HTML_TEMPLATE = r"""
     padding: 0;
     /* mdui handles background colors via its theme tokens, fallback provided */
     background-color: var(--mdui-color-surface-container, #f3edf7);
-    font-family: 'Roboto', sans-serif;
+    # font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     color: var(--mdui-color-on-surface, #1d1b20);
     transition: background-color 0.3s, color 0.3s;
   }
