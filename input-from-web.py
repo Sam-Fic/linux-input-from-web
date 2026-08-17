@@ -48,7 +48,8 @@ TERMINAL_CANDIDATES = [
     # (name,        executable,          arg_style)
     # arg_style: "bash_c"  ->  exe -- bash -c 'CMD'
     #            "dash_e"  ->  exe -e 'CMD'
-    ("ptyxis",            "ptyxis",            "bash_c"),
+    #            "ptyxis"  ->  ptyxis --new-window -T TITLE -x 'CMD'
+    ("ptyxis",            "ptyxis",            "ptyxis"),
     ("gnome-terminal",    "gnome-terminal",    "bash_c"),
     ("konsole",           "konsole",           "dash_e"),
     ("xfce4-terminal",    "xfce4-terminal",    "dash_e"),
@@ -71,8 +72,14 @@ def detect_terminal():
 def build_desktop_exec(terminal_exe, arg_style, title, script_cmd):
     """Build the Exec= line for the autostart .desktop file."""
     inner = f"bash -lc {shlex.quote(script_cmd)}"
-    if arg_style == "bash_c":
-        # e.g. ptyxis -T "Title" -- bash -lc '...'
+    if arg_style == "ptyxis":
+        # ptyxis: -T sets the tab title, -x runs the command in a NEW window.
+        # (ptyxis has no `-- cmd` form, so a bare `-- bash -lc ...` opened a
+        #  stray second window. Use --new-window -x instead.)
+        return (f'{terminal_exe} --new-window -T {shlex.quote(title)} '
+                f'-x {shlex.quote(inner)}')
+    elif arg_style == "bash_c":
+        # e.g. gnome-terminal -T "Title" -- bash -lc '...'
         return f'{terminal_exe} -T {shlex.quote(title)} -- {inner}'
     else:
         # e.g. konsole -e 'bash -lc ...'
@@ -306,22 +313,23 @@ HTML_TEMPLATE = r"""
     min-width: 40px;
     text-align: center;
   }
-  .status {
-    font-size: 0.85rem;
-    color: var(--mdui-color-primary, #6750A4);
-    font-weight: 500;
-    min-height: 1.2em;
-    line-height: 1;
-  }
-￼  mdui-button[disabled], mdui-button-icon[disabled] {
+  mdui-button[disabled], mdui-button-icon[disabled] {
     opacity: 0.38;
     pointer-events: none;
   }
   .autostart-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-shrink: 0;
+    gap: 8px;
     padding: 4px 0;
+  }
+  .autostart-label {
+    font-size: 14px;
+    color: var(--mdui-color-on-surface, #444);
+    flex: 1 1 auto;
+    min-width: 0;
   }
 </style>
 </head>
@@ -347,14 +355,14 @@ HTML_TEMPLATE = r"""
     <div class="nav-center">
       <div class="nav-mid">
         <div class="nav-info" id="nav-info"></div>
-        <div class="status" id="status"></div>
       </div>
     </div>
     <mdui-button-icon id="nav-right" icon="chevron_right" disabled></mdui-button-icon>
   </div>
 
   <div class="autostart-row">
-    <mdui-switch id="autostart-switch" icon="power_settings_new">开机自启（登录弹终端）</mdui-switch>
+    <span class="autostart-label">开机自启（登录后自动弹终端显示二维码）</span>
+    <mdui-switch id="autostart-switch"></mdui-switch>
   </div>
 </div>
 
@@ -380,7 +388,6 @@ if (token) {
 const txt = document.getElementById("txt");
 const btn = document.getElementById("btn");
 const clearBtn = document.getElementById("clear-btn");
-const statusEl = document.getElementById("status");
 const navLeft = document.getElementById("nav-left");
 const navRight = document.getElementById("nav-right");
 const navInfo = document.getElementById("nav-info");
@@ -490,12 +497,10 @@ txt.addEventListener("input", () => {
 });
 
 /* --- Actions --- */
-let statusTimer = null;
 
 function clearText() {
   txt.value = "";
   txt.focus();
-  showStatus("");
 }
 
 async function doSend() {
@@ -523,24 +528,23 @@ async function doSend() {
       }, 800);
       txt.focus();
     } else {
-      showStatus("Error: " + res.status);
+      btn.icon = "error";
+      btn.textContent = "Error " + res.status;
+      setTimeout(() => {
+        isSending = false;
+        updateButtonState();
+      }, 2000);
     }
   } catch(e) {
-    showStatus("Network error");
+    btn.icon = "error";
+    btn.textContent = "Network error";
+    setTimeout(() => {
+      isSending = false;
+      updateButtonState();
+    }, 2000);
   }
   isSending = false;
   updateButtonState();
-}
-
-function showStatus(msg) {
-  if (statusTimer) clearTimeout(statusTimer);
-  if (msg) {
-    statusEl.textContent = msg;
-    statusTimer = setTimeout(() => {
-      statusEl.textContent = "";
-      statusTimer = null;
-    }, 2000);
-  }
 }
 
 /* --- Connection State --- */
@@ -601,18 +605,18 @@ autostartSwitch.addEventListener("change", async () => {
     if (r.ok) {
       const data = await r.json();
       if (data.ok) {
-        showStatus(want ? "已开启开机自启" : "已关闭开机自启");
+        mdui.snackbar({message: want ? "已开启开机自启" : "已关闭开机自启"});
       } else {
         autostartSwitch.checked = !want;
-        showStatus("失败: " + (data.message || "未知错误"));
+        mdui.snackbar({message: "失败: " + (data.message || "未知错误")});
       }
     } else {
       autostartSwitch.checked = !want;
-      showStatus("错误: " + r.status);
+      mdui.snackbar({message: "错误: " + r.status});
     }
   } catch (e) {
     autostartSwitch.checked = !want;
-    showStatus("网络错误");
+    mdui.snackbar({message: "网络错误"});
   } finally {
     autostartSwitch.disabled = false;
   }
