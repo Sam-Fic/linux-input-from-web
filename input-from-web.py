@@ -220,7 +220,7 @@ def save_config(config):
 
 HTML_TEMPLATE = r"""
 <!DOCTYPE html>
-<html lang="en">
+<html lang="__LANG__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
@@ -230,7 +230,7 @@ HTML_TEMPLATE = r"""
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon.svg">
 <link rel="apple-touch-icon" href="/icon.svg">
-<title>Input</title>
+<title>__TITLE__</title>
 
 <!-- Material Design 3 (mdui) Fonts & CSS -->
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -338,6 +338,7 @@ HTML_TEMPLATE = r"""
   <div class="btn-row">
     <mdui-button id="btn" variant="filled" icon="send">SEND</mdui-button>
     <mdui-button-icon id="clear-btn" icon="delete"></mdui-button-icon>
+    <mdui-button-icon id="lang-btn" icon="language"></mdui-button-icon>
   </div>
 
   <div class="input-field">
@@ -345,7 +346,7 @@ HTML_TEMPLATE = r"""
       id="txt" 
       rows="10"
       variant="outlined" 
-      label="Type here..." 
+      label="__LABEL_TYPE_HERE__" 
       autofocus
     ></mdui-text-field>
   </div>
@@ -361,7 +362,7 @@ HTML_TEMPLATE = r"""
   </div>
 
   <div class="autostart-row">
-    <span class="autostart-label">开机自启（登录后自动弹终端显示二维码）</span>
+    <span class="autostart-label" data-i18n="autostart_label">开机自启（登录后自动弹终端显示二维码）</span>
     <mdui-switch id="autostart-switch"></mdui-switch>
   </div>
 </div>
@@ -375,6 +376,75 @@ HTML_TEMPLATE = r"""
 mdui.setColorScheme('#6750A4');
 
 const CONFIG = __CONFIG__;
+
+/* --- i18n (Chinese / English) --- */
+const I18N = {
+  en: {
+    title: "Input",
+    label_type_here: "Type here...",
+    autostart_label: "Auto-start on login (opens terminal with QR code)",
+    sent: "Sent!",
+    error_status: "Error ",
+    network_error: "Network error",
+    sending: "Sending...",
+    offline: "Offline",
+    send: "SEND",
+    autostart_on: "Auto-start enabled",
+    autostart_off: "Auto-start disabled",
+    autostart_fail: "Failed: ",
+    autostart_err: "Error: ",
+    autostart_neterr: "Network error",
+  },
+  zh: {
+    title: "输入",
+    label_type_here: "在此输入…",
+    autostart_label: "开机自启（登录后自动弹终端显示二维码）",
+    sent: "已发送！",
+    error_status: "错误 ",
+    network_error: "网络错误",
+    sending: "发送中…",
+    offline: "离线",
+    send: "发送",
+    autostart_on: "已开启开机自启",
+    autostart_off: "已关闭开机自启",
+    autostart_fail: "失败: ",
+    autostart_err: "错误: ",
+    autostart_neterr: "网络错误",
+  },
+};
+
+const LANG_STORAGE_KEY = "input-from-web-lang";
+
+function detectLang() {
+  // 1. ?lang= override (also saved for next visit)
+  const fromUrl = new URLSearchParams(location.search).get("lang");
+  if (fromUrl === "zh" || fromUrl === "en") {
+    localStorage.setItem(LANG_STORAGE_KEY, fromUrl);
+    return fromUrl;
+  }
+  // 2. saved preference
+  const saved = localStorage.getItem(LANG_STORAGE_KEY);
+  if (saved === "zh" || saved === "en") return saved;
+  // 3. auto from browser
+  const nav = (navigator.language || "en").toLowerCase();
+  return nav.startsWith("zh") ? "zh" : "en";
+}
+
+let LANG = detectLang();
+function t(key) {
+  const dict = I18N[LANG] || I18N.en;
+  return dict[key] !== undefined ? dict[key] : (I18N.en[key] || key);
+}
+
+function applyStaticI18n() {
+  document.documentElement.lang = LANG;
+  document.title = t("title");
+  const label = document.querySelector('#txt');
+  if (label) label.setAttribute("label", t("label_type_here"));
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+}
 
 /* --- Token: URL query > localStorage > null --- */
 const STORAGE_KEY = "input-from-web-token";
@@ -521,7 +591,7 @@ async function doSend() {
       txt.value = "";
       updateNav();
       btn.icon = "check";
-      btn.textContent = "Sent!";
+      btn.textContent = t("sent");
       setTimeout(() => {
         isSending = false;
         updateButtonState();
@@ -529,7 +599,7 @@ async function doSend() {
       txt.focus();
     } else {
       btn.icon = "error";
-      btn.textContent = "Error " + res.status;
+      btn.textContent = t("error_status") + res.status;
       setTimeout(() => {
         isSending = false;
         updateButtonState();
@@ -537,7 +607,7 @@ async function doSend() {
     }
   } catch(e) {
     btn.icon = "error";
-    btn.textContent = "Network error";
+    btn.textContent = t("network_error");
     setTimeout(() => {
       isSending = false;
       updateButtonState();
@@ -555,15 +625,15 @@ function updateButtonState() {
   if (isSending) {
     btn.disabled = true;
     btn.icon = "hourglass_empty";
-    btn.textContent = "Sending...";
+    btn.textContent = t("sending");
   } else if (!isConnected) {
     btn.disabled = true;
     btn.icon = "wifi_off";
-    btn.textContent = "Offline";
+    btn.textContent = t("offline");
   } else {
     btn.disabled = false;
     btn.icon = "send";
-    btn.textContent = "SEND";
+    btn.textContent = t("send");
   }
 }
 
@@ -605,24 +675,36 @@ autostartSwitch.addEventListener("change", async () => {
     if (r.ok) {
       const data = await r.json();
       if (data.ok) {
-        mdui.snackbar({message: want ? "已开启开机自启" : "已关闭开机自启"});
+        mdui.snackbar({message: want ? t("autostart_on") : t("autostart_off")});
       } else {
         autostartSwitch.checked = !want;
-        mdui.snackbar({message: "失败: " + (data.message || "未知错误")});
+        mdui.snackbar({message: t("autostart_fail") + (data.message || "")});
       }
     } else {
       autostartSwitch.checked = !want;
-      mdui.snackbar({message: "错误: " + r.status});
+      mdui.snackbar({message: t("autostart_err") + r.status});
     }
   } catch (e) {
     autostartSwitch.checked = !want;
-    mdui.snackbar({message: "网络错误"});
+    mdui.snackbar({message: t("autostart_neterr")});
   } finally {
     autostartSwitch.disabled = false;
   }
 });
 
 refreshAutostart();
+
+/* --- Language switch --- */
+const langBtn = document.getElementById("lang-btn");
+langBtn.addEventListener("click", () => {
+  LANG = (LANG === "zh") ? "en" : "zh";
+  localStorage.setItem(LANG_STORAGE_KEY, LANG);
+  applyStaticI18n();
+  updateButtonState();
+});
+
+applyStaticI18n();
+updateButtonState();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
@@ -721,7 +803,23 @@ def index():
     # Page is always served — token security is on POST /send.
     # Client gets token from URL query (first visit) or localStorage (PWA / bookmark).
     profile_json = json.dumps(PROFILE, ensure_ascii=False)
-    return HTML_TEMPLATE.replace("__CONFIG__", profile_json)
+
+    # Determine initial UI language: ?lang= override > Accept-Language > en
+    lang_override = request.args.get("lang", "").lower()
+    if lang_override in ("zh", "en"):
+        ui_lang = lang_override
+    else:
+        accept = request.headers.get("Accept-Language", "")
+        ui_lang = "zh" if accept.lower().startswith("zh") else "en"
+    ui_title = "输入" if ui_lang == "zh" else "Input"
+    ui_label = "在此输入…" if ui_lang == "zh" else "Type here..."
+
+    html = (HTML_TEMPLATE
+            .replace("__CONFIG__", profile_json)
+            .replace("__LANG__", ui_lang)
+            .replace("__TITLE__", ui_title)
+            .replace("__LABEL_TYPE_HERE__", ui_label))
+    return html
 
 
 @app.route("/send", methods=["POST"])
