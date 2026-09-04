@@ -71,7 +71,14 @@ def detect_terminal():
 
 def build_desktop_exec(terminal_exe, arg_style, title, script_cmd):
     """Build the Exec= line for the autostart .desktop file."""
-    inner = f"bash -lc {shlex.quote(script_cmd)}"
+    # 10-second countdown so the user sees the terminal window before the
+    # Flask server starts and the QR code is printed.
+    countdown = (
+        "echo 'Starting in 10...'; "
+        "for i in 10 9 8 7 6 5 4 3 2 1; do echo $i; sleep 1; done; "
+        "clear; "
+    )
+    inner = f"bash -lc {shlex.quote(countdown + script_cmd)}"
     if arg_style == "ptyxis":
         # ptyxis: -T sets the tab title, -x runs the command in a NEW window.
         # (ptyxis has no `-- cmd` form, so a bare `-- bash -lc ...` opened a
