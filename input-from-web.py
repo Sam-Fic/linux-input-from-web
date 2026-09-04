@@ -34,7 +34,10 @@ USE_TOKEN = True
 PERMANENT_LINK = False
 METHOD = "type"
 AUTO_PASTE = False
+AUTO_PRESS_ENTER = False
 PROFILE = {}
+FULL_CONFIG = None
+CURRENT_PROFILE_NAME = None
 
 CONFIG_PATH = os.path.expanduser("~/.input-from-web-conf.json")
 
@@ -146,6 +149,12 @@ DEFAULT_CONFIG = {
         "  false - clipboard only, you paste manually (default).",
         "  Ignored when method is 'type'. Useful for GUI apps, not terminals.",
         "",
+        "profiles.<name>.auto_press_enter:",
+        "  true  - after inject_text, simulate an extra Enter key via ydotool.",
+        "  false - do not press Enter (default).",
+        "  Independent of auto_paste. Useful for chat boxes / messengers / shells",
+        "  that need a submit keystroke after the text is typed or pasted.",
+        "",
         "profiles.<name>.port:",
         "  TCP port to listen on (default: 5123).",
         "  Can be overridden with --port on the command line.",
@@ -171,6 +180,7 @@ DEFAULT_CONFIG = {
         "default": {
             "method": "type",
             "auto_paste": False,
+            "auto_press_enter": False,
             "port": 5123,
             "use_security_token": True,
             "voice_send": {
@@ -372,6 +382,11 @@ HTML_TEMPLATE = r"""
     <span class="autostart-label" data-i18n="autostart_label">开机自启（登录后自动弹终端显示二维码）</span>
     <mdui-switch id="autostart-switch"></mdui-switch>
   </div>
+
+  <div class="autostart-row">
+    <span class="autostart-label" data-i18n="enter_label">发送后自动按 Enter</span>
+    <mdui-switch id="enter-switch"></mdui-switch>
+  </div>
 </div>
 
 <!-- Material Design 3 (mdui) JS -->
@@ -401,6 +416,9 @@ const I18N = {
     autostart_fail: "Failed: ",
     autostart_err: "Error: ",
     autostart_neterr: "Network error",
+    enter_label: "Auto press Enter after send",
+    enter_on: "Auto-Enter enabled",
+    enter_off: "Auto-Enter disabled",
   },
   zh: {
     title: "输入",
@@ -417,6 +435,9 @@ const I18N = {
     autostart_fail: "失败: ",
     autostart_err: "错误: ",
     autostart_neterr: "网络错误",
+    enter_label: "发送后自动按 Enter",
+    enter_on: "已开启自动 Enter",
+    enter_off: "已关闭自动 Enter",
   },
 };
 
@@ -701,6 +722,44 @@ autostartSwitch.addEventListener("change", async () => {
 
 refreshAutostart();
 
+/* --- Auto-press-Enter toggle --- */
+const enterSwitch = document.getElementById("enter-switch");
+
+async function refreshEnterSwitch() {
+  try {
+    const r = await fetch("/settings?token=" + encodeURIComponent(token));
+    if (r.ok) {
+      const data = await r.json();
+      enterSwitch.checked = !!data.auto_press_enter;
+    }
+  } catch (e) { /* ignore */ }
+}
+
+enterSwitch.addEventListener("change", async () => {
+  const want = enterSwitch.checked;
+  enterSwitch.disabled = true;
+  try {
+    const r = await fetch("/settings?token=" + encodeURIComponent(token), {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({auto_press_enter: want}),
+    });
+    if (r.ok) {
+      mdui.snackbar({message: want ? t("enter_on") : t("enter_off")});
+    } else {
+      enterSwitch.checked = !want;
+      mdui.snackbar({message: t("autostart_err") + r.status});
+    }
+  } catch (e) {
+    enterSwitch.checked = !want;
+    mdui.snackbar({message: t("autostart_neterr")});
+  } finally {
+    enterSwitch.disabled = false;
+  }
+});
+
+refreshEnterSwitch();
+
 /* --- Language switch --- */
 const langBtn = document.getElementById("lang-btn");
 langBtn.addEventListener("click", () => {
@@ -767,6 +826,15 @@ def inject_text(text):
                 check=True,
                 timeout=5,
             )
+
+    # Independently of auto_paste: optionally press Enter after the text
+    # has been typed / pasted. Useful for chat boxes, messengers, shells.
+    if AUTO_PRESS_ENTER:
+        subprocess.run(
+            ["ydotool", "key", "-d", "50", "28:1", "28:0"],  # 28 = Return
+            check=True,
+            timeout=5,
+        )
 
 
 def check_token():
@@ -860,8 +928,29 @@ def autostart():
     return {"error": "unknown action"}, 400
 
 
+@app.route("/settings", methods=["GET", "POST"])
+def settings():
+    """Read or update profile-level toggles. Token-protected, like /send."""
+    global PROFILE, AUTO_PRESS_ENTER, FULL_CONFIG
+    check_token()
+    if request.method == "GET":
+        return {"auto_press_enter": AUTO_PRESS_ENTER}
+    data = request.get_json(force=True, silent=True) or {}
+    if "auto_press_enter" in data:
+        AUTO_PRESS_ENTER = bool(data["auto_press_enter"])
+        PROFILE["auto_press_enter"] = AUTO_PRESS_ENTER
+        if FULL_CONFIG is not None and CURRENT_PROFILE_NAME in FULL_CONFIG.get("profiles", {}):
+            FULL_CONFIG["profiles"][CURRENT_PROFILE_NAME] = PROFILE
+            try:
+                save_config(FULL_CONFIG)
+            except OSError as e:
+                print(f"Failed to persist settings: {e}", file=sys.stderr)
+    return {"ok": True, "auto_press_enter": AUTO_PRESS_ENTER}
+
+
 def main():
-    global METHOD, USE_TOKEN, PERMANENT_LINK, AUTO_PASTE, TOKEN, PROFILE
+    global METHOD, USE_TOKEN, PERMANENT_LINK, AUTO_PASTE, AUTO_PRESS_ENTER
+    global TOKEN, PROFILE, FULL_CONFIG, CURRENT_PROFILE_NAME
     parser = argparse.ArgumentParser(description="Type on your phone, paste on your desktop.")
     parser.add_argument("--method", choices=["clipboard", "type"], default=None,
                         help="Override profile method. type: ydotool type. clipboard: wl-copy only.")
@@ -896,10 +985,13 @@ def main():
         sys.exit(0 if ok else 1)
 
     PROFILE, profile_name, full_config = load_or_create_config(args.profile)
+    FULL_CONFIG = full_config
+    CURRENT_PROFILE_NAME = profile_name
 
     # CLI flags override profile, profile overrides built-in defaults
     METHOD = args.method or PROFILE.get("method", "type")
     AUTO_PASTE = PROFILE.get("auto_paste", False)
+    AUTO_PRESS_ENTER = PROFILE.get("auto_press_enter", False)
     USE_TOKEN = PROFILE.get("use_security_token", True)
     PERMANENT_LINK = args.permanent_link or args.permanent_link_refresh
 
