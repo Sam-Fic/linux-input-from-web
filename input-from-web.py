@@ -34,6 +34,7 @@ USE_TOKEN = True
 PERMANENT_LINK = False
 METHOD = "type"
 AUTO_PASTE = False
+PASTE_KEY = "ctrl+v"
 AUTO_PRESS_ENTER = False
 PROFILE = {}
 FULL_CONFIG = None
@@ -145,9 +146,15 @@ DEFAULT_CONFIG = {
         "  Can be overridden with --method on the command line.",
         "",
         "profiles.<name>.auto_paste:",
-        "  true  - after wl-copy, simulate Ctrl+V via ydotool (clipboard method only).",
+        "  true  - after wl-copy, simulate a paste keystroke via ydotool (clipboard method only).",
         "  false - clipboard only, you paste manually (default).",
         "  Ignored when method is 'type'. Useful for GUI apps, not terminals.",
+        "",
+        "profiles.<name>.paste_key:",
+        "  'ctrl+v'       - simulate Ctrl+V (default).",
+        "  'ctrl+shift+v' - simulate Ctrl+Shift+V instead.",
+        "  Only used when auto_paste is true. Independent of auto_press_enter.",
+        "  Use Ctrl+Shift+V for terminals, code editors, and apps that ignore Ctrl+V.",
         "",
         "profiles.<name>.auto_press_enter:",
         "  true  - after inject_text, simulate an extra Enter key via ydotool.",
@@ -180,6 +187,7 @@ DEFAULT_CONFIG = {
         "default": {
             "method": "type",
             "auto_paste": False,
+            "paste_key": "ctrl+v",
             "auto_press_enter": False,
             "port": 5123,
             "use_security_token": True,
@@ -387,6 +395,11 @@ HTML_TEMPLATE = r"""
     <span class="autostart-label" data-i18n="enter_label">发送后自动按 Enter</span>
     <mdui-switch id="enter-switch"></mdui-switch>
   </div>
+
+  <div class="autostart-row">
+    <span class="autostart-label" data-i18n="paste_key_label">粘贴快捷键使用 Ctrl+Shift+V（默认 Ctrl+V）</span>
+    <mdui-switch id="paste-key-switch"></mdui-switch>
+  </div>
 </div>
 
 <!-- Material Design 3 (mdui) JS -->
@@ -419,6 +432,9 @@ const I18N = {
     enter_label: "Auto press Enter after send",
     enter_on: "Auto-Enter enabled",
     enter_off: "Auto-Enter disabled",
+    paste_key_label: "Paste with Ctrl+Shift+V (default Ctrl+V)",
+    paste_key_on: "Using Ctrl+Shift+V",
+    paste_key_off: "Using Ctrl+V",
   },
   zh: {
     title: "输入",
@@ -438,6 +454,9 @@ const I18N = {
     enter_label: "发送后自动按 Enter",
     enter_on: "已开启自动 Enter",
     enter_off: "已关闭自动 Enter",
+    paste_key_label: "粘贴快捷键使用 Ctrl+Shift+V（默认 Ctrl+V）",
+    paste_key_on: "已切换为 Ctrl+Shift+V",
+    paste_key_off: "已恢复 Ctrl+V",
   },
 };
 
@@ -760,6 +779,50 @@ enterSwitch.addEventListener("change", async () => {
 
 refreshEnterSwitch();
 
+/* --- Paste key toggle (Ctrl+V ⇄ Ctrl+Shift+V) --- */
+const pasteKeySwitch = document.getElementById("paste-key-switch");
+
+async function refreshPasteKeySwitch() {
+  try {
+    const r = await fetch("/settings?token=" + encodeURIComponent(token));
+    if (r.ok) {
+      const data = await r.json();
+      pasteKeySwitch.checked = data.paste_key === "ctrl+shift+v";
+    }
+  } catch (e) { /* ignore */ }
+}
+
+pasteKeySwitch.addEventListener("change", async () => {
+  const want = pasteKeySwitch.checked ? "ctrl+shift+v" : "ctrl+v";
+  pasteKeySwitch.disabled = true;
+  try {
+    const r = await fetch("/settings?token=" + encodeURIComponent(token), {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({paste_key: want}),
+    });
+    if (r.ok) {
+      const data = await r.json().catch(() => ({}));
+      if (data.error) {
+        pasteKeySwitch.checked = !pasteKeySwitch.checked;
+        mdui.snackbar({message: t("autostart_err") + data.error});
+      } else {
+        mdui.snackbar({message: want === "ctrl+shift+v" ? t("paste_key_on") : t("paste_key_off")});
+      }
+    } else {
+      pasteKeySwitch.checked = !pasteKeySwitch.checked;
+      mdui.snackbar({message: t("autostart_err") + r.status});
+    }
+  } catch (e) {
+    pasteKeySwitch.checked = !pasteKeySwitch.checked;
+    mdui.snackbar({message: t("autostart_neterr")});
+  } finally {
+    pasteKeySwitch.disabled = false;
+  }
+});
+
+refreshPasteKeySwitch();
+
 /* --- Language switch --- */
 const langBtn = document.getElementById("lang-btn");
 langBtn.addEventListener("click", () => {
@@ -821,8 +884,17 @@ def inject_text(text):
         # Auto-paste is required since the user expected direct typing.
         # When method is "clipboard", respect the AUTO_PASTE setting.
         if AUTO_PASTE or (METHOD == "type" and not _is_ascii(text)):
+            # Build the paste chord: Ctrl+V (29,47) or Ctrl+Shift+V (42,29,47).
+            # Key release order is the reverse of press order.
+            # 29=Ctrl, 42=Shift, 47=V (Linux x86 keycodes).
+            if PASTE_KEY == "ctrl+shift+v":
+                # Press: Shift, Ctrl, V  →  Release: V, Ctrl, Shift
+                chord = ["42:1", "29:1", "47:1", "47:0", "29:0", "42:0"]
+            else:
+                # Default: Ctrl+V →  Release: V, Ctrl
+                chord = ["29:1", "47:1", "47:0", "29:0"]
             subprocess.run(
-                ["ydotool", "key", "-d", "100", "29:1", "47:1", "47:0", "29:0"],
+                ["ydotool", "key", "-d", "100", *chord],
                 check=True,
                 timeout=5,
             )
@@ -931,25 +1003,42 @@ def autostart():
 @app.route("/settings", methods=["GET", "POST"])
 def settings():
     """Read or update profile-level toggles. Token-protected, like /send."""
-    global PROFILE, AUTO_PRESS_ENTER, FULL_CONFIG
+    global PROFILE, AUTO_PRESS_ENTER, PASTE_KEY, FULL_CONFIG
     check_token()
     if request.method == "GET":
-        return {"auto_press_enter": AUTO_PRESS_ENTER}
+        return {
+            "auto_press_enter": AUTO_PRESS_ENTER,
+            "paste_key": PASTE_KEY,
+        }
     data = request.get_json(force=True, silent=True) or {}
+    dirty = False
     if "auto_press_enter" in data:
         AUTO_PRESS_ENTER = bool(data["auto_press_enter"])
         PROFILE["auto_press_enter"] = AUTO_PRESS_ENTER
-        if FULL_CONFIG is not None and CURRENT_PROFILE_NAME in FULL_CONFIG.get("profiles", {}):
-            FULL_CONFIG["profiles"][CURRENT_PROFILE_NAME] = PROFILE
-            try:
-                save_config(FULL_CONFIG)
-            except OSError as e:
-                print(f"Failed to persist settings: {e}", file=sys.stderr)
-    return {"ok": True, "auto_press_enter": AUTO_PRESS_ENTER}
+        dirty = True
+    if "paste_key" in data:
+        requested = str(data["paste_key"]).strip().lower()
+        if requested in ("ctrl+v", "ctrl+shift+v"):
+            PASTE_KEY = requested
+            PROFILE["paste_key"] = PASTE_KEY
+            dirty = True
+        else:
+            return {"error": "paste_key must be 'ctrl+v' or 'ctrl+shift+v'"}, 400
+    if dirty and FULL_CONFIG is not None and CURRENT_PROFILE_NAME in FULL_CONFIG.get("profiles", {}):
+        FULL_CONFIG["profiles"][CURRENT_PROFILE_NAME] = PROFILE
+        try:
+            save_config(FULL_CONFIG)
+        except OSError as e:
+            print(f"Failed to persist settings: {e}", file=sys.stderr)
+    return {
+        "ok": True,
+        "auto_press_enter": AUTO_PRESS_ENTER,
+        "paste_key": PASTE_KEY,
+    }
 
 
 def main():
-    global METHOD, USE_TOKEN, PERMANENT_LINK, AUTO_PASTE, AUTO_PRESS_ENTER
+    global METHOD, USE_TOKEN, PERMANENT_LINK, AUTO_PASTE, PASTE_KEY, AUTO_PRESS_ENTER
     global TOKEN, PROFILE, FULL_CONFIG, CURRENT_PROFILE_NAME
     parser = argparse.ArgumentParser(description="Type on your phone, paste on your desktop.")
     parser.add_argument("--method", choices=["clipboard", "type"], default=None,
@@ -991,6 +1080,7 @@ def main():
     # CLI flags override profile, profile overrides built-in defaults
     METHOD = args.method or PROFILE.get("method", "type")
     AUTO_PASTE = PROFILE.get("auto_paste", False)
+    PASTE_KEY = PROFILE.get("paste_key", "ctrl+v")
     AUTO_PRESS_ENTER = PROFILE.get("auto_press_enter", False)
     USE_TOKEN = PROFILE.get("use_security_token", True)
     PERMANENT_LINK = args.permanent_link or args.permanent_link_refresh
