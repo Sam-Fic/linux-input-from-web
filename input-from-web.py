@@ -257,25 +257,130 @@ HTML_TEMPLATE = r"""
 <link rel="apple-touch-icon" href="/icon.svg">
 <title>__TITLE__</title>
 
-<!-- Material Design 3 (mdui) Fonts & CSS -->
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/mdui@2/mdui.css">
+<!-- Material 3 Expressive (@m3e/web) Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet">
 
 <style>
+  /* M3 baseline color schemes (seed #6750A4) in the official --md-sys-color-*
+     namespace that @m3e/web DesignTokens consume. Components resolve
+     var(--md-sys-color-<role>, <light fallback>) so both schemes must be defined. */
+  :root {
+    --md-sys-color-primary: #6750A4;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-primary-container: #EADDFF;
+    --md-sys-color-on-primary-container: #21005D;
+    --md-sys-color-primary-fixed: #EADDFF;
+    --md-sys-color-primary-fixed-dim: #D0BCFF;
+    --md-sys-color-on-primary-fixed: #21005D;
+    --md-sys-color-on-primary-fixed-variant: #4F378B;
+    --md-sys-color-secondary: #625B71;
+    --md-sys-color-on-secondary: #FFFFFF;
+    --md-sys-color-secondary-container: #E8DEF8;
+    --md-sys-color-on-secondary-container: #1D192B;
+    --md-sys-color-secondary-fixed: #E8DEF8;
+    --md-sys-color-secondary-fixed-dim: #CCC2DC;
+    --md-sys-color-on-secondary-fixed: #1D192B;
+    --md-sys-color-on-secondary-fixed-variant: #4A4458;
+    --md-sys-color-tertiary: #7D5260;
+    --md-sys-color-on-tertiary: #FFFFFF;
+    --md-sys-color-tertiary-container: #FFD8E4;
+    --md-sys-color-on-tertiary-container: #31111D;
+    --md-sys-color-tertiary-fixed: #FFD8E4;
+    --md-sys-color-tertiary-fixed-dim: #EFB8C8;
+    --md-sys-color-on-tertiary-fixed: #31111D;
+    --md-sys-color-on-tertiary-fixed-variant: #633B48;
+    --md-sys-color-error: #B3261E;
+    --md-sys-color-on-error: #FFFFFF;
+    --md-sys-color-error-container: #F9DEDC;
+    --md-sys-color-on-error-container: #410E0B;
+    --md-sys-color-surface: #FEF7FF;
+    --md-sys-color-on-surface: #1D1B20;
+    --md-sys-color-surface-variant: #E7E0EC;
+    --md-sys-color-on-surface-variant: #49454F;
+    --md-sys-color-surface-dim: #DED8E1;
+    --md-sys-color-surface-bright: #FEF7FF;
+    --md-sys-color-surface-container-lowest: #FFFFFF;
+    --md-sys-color-surface-container-low: #F7F2FA;
+    --md-sys-color-surface-container: #F3EDF7;
+    --md-sys-color-surface-container-high: #ECE6F0;
+    --md-sys-color-surface-container-highest: #E6E0E9;
+    --md-sys-color-outline: #79747E;
+    --md-sys-color-outline-variant: #CAC4D0;
+    --md-sys-color-inverse-surface: #313033;
+    --md-sys-color-inverse-on-surface: #F4EFF4;
+    --md-sys-color-inverse-primary: #D0BCFF;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-shadow: #000000;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --md-sys-color-primary: #D0BCFF;
+      --md-sys-color-on-primary: #381E72;
+      --md-sys-color-primary-container: #4F378B;
+      --md-sys-color-on-primary-container: #EADDFF;
+      --md-sys-color-primary-fixed: #EADDFF;
+      --md-sys-color-primary-fixed-dim: #D0BCFF;
+      --md-sys-color-on-primary-fixed: #21005D;
+      --md-sys-color-on-primary-fixed-variant: #4F378B;
+      --md-sys-color-secondary: #CCC2DC;
+      --md-sys-color-on-secondary: #332D41;
+      --md-sys-color-secondary-container: #4A4458;
+      --md-sys-color-on-secondary-container: #E8DEF8;
+      --md-sys-color-secondary-fixed: #E8DEF8;
+      --md-sys-color-secondary-fixed-dim: #CCC2DC;
+      --md-sys-color-on-secondary-fixed: #1D192B;
+      --md-sys-color-on-secondary-fixed-variant: #4A4458;
+      --md-sys-color-tertiary: #EFB8C8;
+      --md-sys-color-on-tertiary: #492532;
+      --md-sys-color-tertiary-container: #633B48;
+      --md-sys-color-on-tertiary-container: #FFD8E4;
+      --md-sys-color-tertiary-fixed: #FFD8E4;
+      --md-sys-color-tertiary-fixed-dim: #EFB8C8;
+      --md-sys-color-on-tertiary-fixed: #31111D;
+      --md-sys-color-on-tertiary-fixed-variant: #633B48;
+      --md-sys-color-error: #F2B8B5;
+      --md-sys-color-on-error: #601410;
+      --md-sys-color-error-container: #8C1D18;
+      --md-sys-color-on-error-container: #F9DEDC;
+      --md-sys-color-surface: #141218;
+      --md-sys-color-on-surface: #E6E0E9;
+      --md-sys-color-surface-variant: #49454F;
+      --md-sys-color-on-surface-variant: #CAC4D0;
+      --md-sys-color-surface-dim: #141218;
+      --md-sys-color-surface-bright: #3B383E;
+      --md-sys-color-surface-container-lowest: #0F0D13;
+      --md-sys-color-surface-container-low: #1D1B20;
+      --md-sys-color-surface-container: #211F26;
+      --md-sys-color-surface-container-high: #2B2930;
+      --md-sys-color-surface-container-highest: #36343B;
+      --md-sys-color-outline: #938F99;
+      --md-sys-color-outline-variant: #49454F;
+      --md-sys-color-inverse-surface: #E6E0E9;
+      --md-sys-color-inverse-on-surface: #313033;
+      --md-sys-color-inverse-primary: #4F378B;
+      --md-sys-color-scrim: #000000;
+      --md-sys-color-shadow: #000000;
+    }
+  }
   html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    /* mdui handles background colors via its theme tokens, fallback provided */
-    background-color: var(--mdui-color-surface-container, #f3edf7);
-    # font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: var(--mdui-color-on-surface, #1d1b20);
+    /* Keep the app fixed to the viewport: when the mobile keyboard opens the
+       browser must not pan the page; the flexible input area shrinks instead. */
+    overflow: hidden;
+    overscroll-behavior: none;
+    background-color: var(--md-sys-color-surface-container, #f3edf7);
+    color: var(--md-sys-color-on-surface, #1d1b20);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     transition: background-color 0.3s, color 0.3s;
   }
   .app-container {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    /* --app-height tracks visualViewport.height (set from JS) so the layout
+       fits above the keyboard on both Android (resizes-content) and iOS. */
+    height: var(--app-height, 100dvh);
     padding: 16px;
     box-sizing: border-box;
     gap: 12px;
@@ -286,30 +391,87 @@ HTML_TEMPLATE = r"""
     flex-shrink: 0;
     align-items: center;
   }
-  .btn-row mdui-button {
+  .btn-row m3e-button {
     flex: 1;
+  }
+  /* Expressive send button: amplify the built-in press shape-morph so the
+     pill visibly squishes (spring physics come from the component). */
+  .btn-row m3e-button#btn {
+    --m3e-button-shape-pressed-morph: 16px;
+  }
+  /* Success feedback: the icon flies out of the clipped wrapper and the new
+     one flies back in. */
+  @keyframes btn-icon-out {
+    to { transform: translateX(130%); opacity: 0; }
+  }
+  @keyframes btn-icon-in {
+    from { transform: translateX(-130%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  #btn > m3e-icon.fly-out { animation: btn-icon-out 0.18s ease-in forwards; }
+  #btn > m3e-icon.fly-in { animation: btn-icon-in 0.26s cubic-bezier(0.2, 0, 0, 1); }
+  @media (prefers-reduced-motion: reduce) {
+    #btn > m3e-icon.fly-out, #btn > m3e-icon.fly-in { animation: none; }
   }
   .input-field {
     flex: 1;
     display: flex;
-    min-height: 150px;
+    min-height: 96px;
     position: relative;
     overflow: visible;
   }
-  .input-field mdui-text-field {
-    width: 100%;
+  /* Hand-styled M3 outlined field: m3e-form-field's floating label does not
+     track multiline textareas, so the box, border notch and textarea are
+     styled here directly. The height chain stays unbroken so the field
+     shrinks correctly when the mobile keyboard opens. */
+  .field-box {
+    position: relative;
     flex: 1;
+    display: flex;
+    min-height: 0;
+    border: 1px solid var(--md-sys-color-outline, #79747e);
+    border-radius: 12px;
+    transition: border-color 0.2s;
   }
-  /* Target the internal textarea via CSS part for full height */
-  .input-field mdui-text-field::part(input) {
-    height: 100%;
-    max-height: none !important;
-    resize: none;
-    overflow-y: auto;
+  .field-box:focus-within {
+    border-color: var(--md-sys-color-primary, #6750a4);
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-primary, #6750a4);
   }
-  /* Prevent label clipping when floating */
-  .input-field mdui-text-field::part(label) {
+  .field-box .flt-label {
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    max-width: calc(100% - 28px);
+    padding: 0 6px;
+    background: var(--md-sys-color-surface-container, #f3edf7);
+    color: var(--md-sys-color-on-surface-variant, #49454f);
+    font-size: 12px;
+    line-height: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
     z-index: 1;
+  }
+  .field-box:focus-within .flt-label {
+    color: var(--md-sys-color-primary, #6750a4);
+  }
+  .field-box textarea {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface, #1d1b20);
+    caret-color: var(--md-sys-color-primary, #6750a4);
+    padding: 12px 16px;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.5;
+    box-sizing: border-box;
   }
   .nav-row {
     display: flex;
@@ -333,12 +495,12 @@ HTML_TEMPLATE = r"""
   }
   .nav-info {
     font-size: 0.9rem;
-    color: var(--mdui-color-on-surface-variant, #49454f);
+    color: var(--md-sys-color-on-surface-variant, #49454f);
     line-height: 1;
     min-width: 40px;
     text-align: center;
   }
-  mdui-button[disabled], mdui-button-icon[disabled] {
+  m3e-button[disabled], m3e-icon-button[disabled] {
     opacity: 0.38;
     pointer-events: none;
   }
@@ -352,63 +514,161 @@ HTML_TEMPLATE = r"""
   }
   .autostart-label {
     font-size: 14px;
-    color: var(--mdui-color-on-surface, #444);
+    color: var(--md-sys-color-on-surface, #444);
     flex: 1 1 auto;
     min-width: 0;
+  }
+  /* Bottom sheet content */
+  .sheet-header {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface, #1d1b20);
+    padding: 4px 16px 0;
+  }
+  .sheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 16px 20px;
   }
 </style>
 </head>
 <body>
 <div class="app-container">
   <div class="btn-row">
-    <mdui-button id="btn" variant="filled" icon="send">SEND</mdui-button>
-    <mdui-button-icon id="clear-btn" icon="delete"></mdui-button-icon>
-    <mdui-button-icon id="lang-btn" icon="language"></mdui-button-icon>
+    <m3e-button id="btn" variant="filled" size="large">
+      <m3e-icon slot="icon" name="send" variant="outlined"></m3e-icon><span class="btn-label">SEND</span>
+    </m3e-button>
+    <m3e-icon-button id="clear-btn" variant="standard">
+      <m3e-icon name="delete" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
+    <m3e-icon-button id="settings-btn" variant="standard">
+      <m3e-icon name="tune" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
+    <m3e-icon-button id="lang-btn" variant="standard">
+      <m3e-icon name="language" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
   </div>
 
   <div class="input-field">
-    <mdui-text-field 
-      id="txt" 
-      rows="10"
-      variant="outlined" 
-      label="__LABEL_TYPE_HERE__" 
-      autofocus
-    ></mdui-text-field>
+    <div class="field-box">
+      <label class="flt-label" for="txt">__LABEL_TYPE_HERE__</label>
+      <textarea id="txt" rows="4" autofocus></textarea>
+    </div>
   </div>
 
   <div class="nav-row">
-    <mdui-button-icon id="nav-left" icon="chevron_left" disabled></mdui-button-icon>
+    <m3e-icon-button id="nav-left" variant="standard" disabled>
+      <m3e-icon name="chevron_left" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
     <div class="nav-center">
       <div class="nav-mid">
         <div class="nav-info" id="nav-info"></div>
       </div>
     </div>
-    <mdui-button-icon id="nav-right" icon="chevron_right" disabled></mdui-button-icon>
-  </div>
-
-  <div class="autostart-row">
-    <span class="autostart-label" data-i18n="autostart_label">开机自启（登录后自动弹终端显示二维码）</span>
-    <mdui-switch id="autostart-switch"></mdui-switch>
-  </div>
-
-  <div class="autostart-row">
-    <span class="autostart-label" data-i18n="enter_label">发送后自动按 Enter</span>
-    <mdui-switch id="enter-switch"></mdui-switch>
-  </div>
-
-  <div class="autostart-row">
-    <span class="autostart-label" data-i18n="paste_key_label">粘贴快捷键使用 Ctrl+Shift+V（默认 Ctrl+V）</span>
-    <mdui-switch id="paste-key-switch"></mdui-switch>
+    <m3e-icon-button id="nav-right" variant="standard" disabled>
+      <m3e-icon name="chevron_right" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
   </div>
 </div>
 
-<!-- Material Design 3 (mdui) JS -->
-<script src="https://unpkg.com/mdui@2/mdui.global.js"></script>
-<script>
-// Apply Material 3 Dynamic Color (Material You)
-// #6750A4 is the baseline M3 seed color. mdui automatically extracts and generates 
-// the full tonal color palette (Primary, Secondary, Surface, etc.) and handles Dark Mode automatically.
-mdui.setColorScheme('#6750A4');
+<!-- Settings live in a modal bottom sheet (drag handle, swipe to dismiss,
+     fit-to-content height) instead of occupying rows in the main layout. -->
+<m3e-bottom-sheet id="settings-sheet" modal handle hideable detents="fit">
+  <div slot="header" class="sheet-header" data-i18n="settings_title">设置</div>
+  <div class="sheet-body">
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="autostart_label">开机自启（登录后自动弹终端显示二维码）</span>
+      <m3e-switch id="autostart-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="enter_label">发送后自动按 Enter</span>
+      <m3e-switch id="enter-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="paste_key_label">粘贴快捷键使用 Ctrl+Shift+V（默认 Ctrl+V）</span>
+      <m3e-switch id="paste-key-switch"></m3e-switch>
+    </div>
+  </div>
+</m3e-bottom-sheet>
+
+<!-- Material 3 Expressive (@m3e/web) -->
+<!-- m3e builds on Lit + tslib + its own core; the dist files use bare specifiers,
+     so we publish an import map before the module script loads. -->
+<script type="importmap">
+{
+  "imports": {
+    "lit": "https://unpkg.com/lit@3.3.3/index.js",
+    "lit/": "https://unpkg.com/lit@3.3.3/",
+    "lit-element": "https://unpkg.com/lit-element@4.2.2/lit-element.js",
+    "lit-element/": "https://unpkg.com/lit-element@4.2.2/",
+    "lit-html": "https://unpkg.com/lit-html@3.3.3/lit-html.js",
+    "lit-html/": "https://unpkg.com/lit-html@3.3.3/",
+    "@lit/reactive-element": "https://unpkg.com/@lit/reactive-element@2.1.2/reactive-element.js",
+    "@lit/reactive-element/": "https://unpkg.com/@lit/reactive-element@2.1.2/",
+    "tslib": "https://unpkg.com/tslib@2.8.1/tslib.es6.js",
+    "@m3e/web/core": "https://unpkg.com/@m3e/web@2.7.9/dist/core.min.js",
+    "@m3e/web/core/a11y": "https://unpkg.com/@m3e/web@2.7.9/dist/core-a11y.min.js",
+    "@m3e/web/core/bidi": "https://unpkg.com/@m3e/web@2.7.9/dist/core-bidi.min.js",
+    "@m3e/web/button": "https://unpkg.com/@m3e/web@2.7.9/dist/button.min.js",
+    "@m3e/web/icon-button": "https://unpkg.com/@m3e/web@2.7.9/dist/icon-button.min.js"
+  }
+}
+</script>
+<!-- One ES module: load m3e, then wait until every custom element is upgraded
+     before touching the DOM. This avoids race conditions where page logic runs
+     against un-upgraded <m3e-*> elements. -->
+<script type="module">
+  try {
+    await import('https://unpkg.com/@m3e/web@2.7.9/dist/core.min.js');
+    await import('https://unpkg.com/@m3e/web@2.7.9/dist/icon.min.js');
+    await import('https://unpkg.com/@m3e/web@2.7.9/dist/button.min.js');
+    await import('https://unpkg.com/@m3e/web@2.7.9/dist/icon-button.min.js');
+    await import('https://unpkg.com/@m3e/web@2.7.9/dist/switch.min.js');
+    await import('https://unpkg.com/@m3e/web@2.7.9/dist/snackbar.min.js');
+    await import('https://unpkg.com/@m3e/web@2.7.9/dist/bottom-sheet.min.js');
+  } catch (err) {
+    // Surface CDN/boot failures visibly instead of leaving an unstyled, dead page.
+    window.__M3E_BOOT_ERROR__ = String((err && err.message) || err);
+    const banner = document.createElement('div');
+    banner.textContent = 'Failed to load UI components: ' + window.__M3E_BOOT_ERROR__;
+    banner.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;background:#b3261e;color:#fff;'
+      + 'padding:12px 16px;border-radius:12px;z-index:9999;font:14px/1.4 system-ui,sans-serif';
+    document.body.appendChild(banner);
+    throw err;
+  }
+
+  // Make sure every <m3e-*> element on the DOM has finished upgrading
+  // before the rest of this script runs.
+  await Promise.all([
+    customElements.whenDefined('m3e-button'),
+    customElements.whenDefined('m3e-icon-button'),
+    customElements.whenDefined('m3e-switch'),
+    customElements.whenDefined('m3e-icon'),
+    customElements.whenDefined('m3e-snackbar'),
+    customElements.whenDefined('m3e-bottom-sheet'),
+  ]);
+
+  /* --- Mobile keyboard fit -------------------------------------------------
+     When the virtual keyboard opens, keep the layout fitted to the visible
+     area and stop the browser from panning the whole page upward (which
+     made the textarea text and its floating label appear shifted). */
+  const vv = window.visualViewport;
+  if (vv) {
+    // Clamp to innerHeight too: visualViewport can lag behind window resizes
+    // (rotation, devtools), which would push bottom controls out of reach.
+    const fitViewport = () => {
+      const h = Math.round(Math.min(vv.height, window.innerHeight));
+      document.documentElement.style.setProperty('--app-height', h + 'px');
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    vv.addEventListener('resize', fitViewport);
+    vv.addEventListener('scroll', fitViewport);
+    window.addEventListener('resize', fitViewport);
+    fitViewport();
+  }
 
 const CONFIG = __CONFIG__;
 
@@ -435,6 +695,11 @@ const I18N = {
     paste_key_label: "Paste with Ctrl+Shift+V (default Ctrl+V)",
     paste_key_on: "Using Ctrl+Shift+V",
     paste_key_off: "Using Ctrl+V",
+    settings_title: "Settings",
+    clear_label: "Clear text",
+    lang_label: "Switch language",
+    prev_label: "Previous entry",
+    next_label: "Next entry",
   },
   zh: {
     title: "输入",
@@ -457,6 +722,11 @@ const I18N = {
     paste_key_label: "粘贴快捷键使用 Ctrl+Shift+V（默认 Ctrl+V）",
     paste_key_on: "已切换为 Ctrl+Shift+V",
     paste_key_off: "已恢复 Ctrl+V",
+    settings_title: "设置",
+    clear_label: "清除文本",
+    lang_label: "切换语言",
+    prev_label: "上一条",
+    next_label: "下一条",
   },
 };
 
@@ -486,11 +756,24 @@ function t(key) {
 function applyStaticI18n() {
   document.documentElement.lang = LANG;
   document.title = t("title");
-  const label = document.querySelector('#txt');
-  if (label) label.setAttribute("label", t("label_type_here"));
+  // The textarea label lives on the hand-styled outlined field box.
+  const label = document.querySelector('.field-box .flt-label');
+  if (label) label.textContent = t("label_type_here");
   document.querySelectorAll('[data-i18n]').forEach(el => {
     el.textContent = t(el.getAttribute('data-i18n'));
   });
+  // Accessible names for the icon-only buttons.
+  const ariaMap = [
+    ["settings-btn", "settings_title"],
+    ["clear-btn", "clear_label"],
+    ["lang-btn", "lang_label"],
+    ["nav-left", "prev_label"],
+    ["nav-right", "next_label"],
+  ];
+  for (const [id, key] of ariaMap) {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute("aria-label", t(key));
+  }
 }
 
 /* --- Token: URL query > localStorage > null --- */
@@ -504,10 +787,36 @@ if (token) {
 
 const txt = document.getElementById("txt");
 const btn = document.getElementById("btn");
+const btnLabel = btn.querySelector(".btn-label");
+const btnIcon = btn.querySelector('m3e-icon[slot="icon"]');
 const clearBtn = document.getElementById("clear-btn");
 const navLeft = document.getElementById("nav-left");
 const navRight = document.getElementById("nav-right");
 const navInfo = document.getElementById("nav-info");
+
+// m3e-button has no `icon` JS property — update the slotted <m3e-icon>'s `name` instead.
+function setBtnIcon(name) {
+  if (btnIcon) btnIcon.setAttribute("name", name);
+}
+
+// Expressive swap: current icon flies out (clipped by the button wrapper),
+// then the new icon flies in. Falls back to an instant swap without motion.
+function setBtnIconAnimated(name) {
+  if (!btnIcon || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    setBtnIcon(name);
+    return;
+  }
+  btnIcon.classList.remove("fly-in", "fly-out");
+  // Force a style flush so re-adding the class restarts the animation.
+  void btnIcon.offsetWidth;
+  btnIcon.classList.add("fly-out");
+  btnIcon.addEventListener("animationend", () => {
+    setBtnIcon(name);
+    btnIcon.classList.remove("fly-out");
+    void btnIcon.offsetWidth;
+    btnIcon.classList.add("fly-in");
+  }, { once: true });
+}
 
 btn.addEventListener("click", doSend);
 clearBtn.addEventListener("click", clearText);
@@ -637,31 +946,29 @@ async function doSend() {
       draft = "";
       txt.value = "";
       updateNav();
-      btn.icon = "check";
-      btn.textContent = t("sent");
+      setBtnIconAnimated("check");
+      if (btnLabel) btnLabel.textContent = t("sent");
       setTimeout(() => {
         isSending = false;
         updateButtonState();
       }, 800);
       txt.focus();
     } else {
-      btn.icon = "error";
-      btn.textContent = t("error_status") + res.status;
+      setBtnIcon("error");
+      if (btnLabel) btnLabel.textContent = t("error_status") + res.status;
       setTimeout(() => {
         isSending = false;
         updateButtonState();
       }, 2000);
     }
   } catch(e) {
-    btn.icon = "error";
-    btn.textContent = t("network_error");
+    setBtnIcon("error");
+    if (btnLabel) btnLabel.textContent = t("network_error");
     setTimeout(() => {
       isSending = false;
       updateButtonState();
     }, 2000);
   }
-  isSending = false;
-  updateButtonState();
 }
 
 /* --- Connection State --- */
@@ -671,16 +978,16 @@ let isSending = false;
 function updateButtonState() {
   if (isSending) {
     btn.disabled = true;
-    btn.icon = "hourglass_empty";
-    btn.textContent = t("sending");
+    setBtnIcon("hourglass_empty");
+    if (btnLabel) btnLabel.textContent = t("sending");
   } else if (!isConnected) {
     btn.disabled = true;
-    btn.icon = "wifi_off";
-    btn.textContent = t("offline");
+    setBtnIcon("wifi_off");
+    if (btnLabel) btnLabel.textContent = t("offline");
   } else {
     btn.disabled = false;
-    btn.icon = "send";
-    btn.textContent = t("send");
+    setBtnIcon("send");
+    if (btnLabel) btnLabel.textContent = t("send");
   }
 }
 
@@ -722,18 +1029,18 @@ autostartSwitch.addEventListener("change", async () => {
     if (r.ok) {
       const data = await r.json();
       if (data.ok) {
-        mdui.snackbar({message: want ? t("autostart_on") : t("autostart_off")});
+        window.M3eSnackbar.open(want ? t("autostart_on") : t("autostart_off"));
       } else {
         autostartSwitch.checked = !want;
-        mdui.snackbar({message: t("autostart_fail") + (data.message || "")});
+        window.M3eSnackbar.open(t("autostart_fail") + (data.message || ""));
       }
     } else {
       autostartSwitch.checked = !want;
-      mdui.snackbar({message: t("autostart_err") + r.status});
+      window.M3eSnackbar.open(t("autostart_err") + r.status);
     }
   } catch (e) {
     autostartSwitch.checked = !want;
-    mdui.snackbar({message: t("autostart_neterr")});
+    window.M3eSnackbar.open(t("autostart_neterr"));
   } finally {
     autostartSwitch.disabled = false;
   }
@@ -764,14 +1071,14 @@ enterSwitch.addEventListener("change", async () => {
       body: JSON.stringify({auto_press_enter: want}),
     });
     if (r.ok) {
-      mdui.snackbar({message: want ? t("enter_on") : t("enter_off")});
+      window.M3eSnackbar.open(want ? t("enter_on") : t("enter_off"));
     } else {
       enterSwitch.checked = !want;
-      mdui.snackbar({message: t("autostart_err") + r.status});
+      window.M3eSnackbar.open(t("autostart_err") + r.status);
     }
   } catch (e) {
     enterSwitch.checked = !want;
-    mdui.snackbar({message: t("autostart_neterr")});
+    window.M3eSnackbar.open(t("autostart_neterr"));
   } finally {
     enterSwitch.disabled = false;
   }
@@ -805,23 +1112,28 @@ pasteKeySwitch.addEventListener("change", async () => {
       const data = await r.json().catch(() => ({}));
       if (data.error) {
         pasteKeySwitch.checked = !pasteKeySwitch.checked;
-        mdui.snackbar({message: t("autostart_err") + data.error});
+        window.M3eSnackbar.open(t("autostart_err") + data.error);
       } else {
-        mdui.snackbar({message: want === "ctrl+shift+v" ? t("paste_key_on") : t("paste_key_off")});
+        window.M3eSnackbar.open(want === "ctrl+shift+v" ? t("paste_key_on") : t("paste_key_off"));
       }
     } else {
       pasteKeySwitch.checked = !pasteKeySwitch.checked;
-      mdui.snackbar({message: t("autostart_err") + r.status});
+      window.M3eSnackbar.open(t("autostart_err") + r.status);
     }
   } catch (e) {
     pasteKeySwitch.checked = !pasteKeySwitch.checked;
-    mdui.snackbar({message: t("autostart_neterr")});
+    window.M3eSnackbar.open(t("autostart_neterr"));
   } finally {
     pasteKeySwitch.disabled = false;
   }
 });
 
 refreshPasteKeySwitch();
+
+/* --- Settings bottom sheet --- */
+const settingsBtn = document.getElementById("settings-btn");
+const settingsSheet = document.getElementById("settings-sheet");
+settingsBtn.addEventListener("click", () => settingsSheet.show());
 
 /* --- Language switch --- */
 const langBtn = document.getElementById("lang-btn");
