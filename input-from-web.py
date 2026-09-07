@@ -468,6 +468,9 @@ HTML_TEMPLATE = r"""
     color: var(--md-sys-color-on-surface, #1d1b20);
     caret-color: var(--md-sys-color-primary, #6750a4);
     padding: 12px 16px;
+    /* 表单控件默认不继承 font-family，会回退到浏览器内置字体；
+       这里用 inherit 让它跟随页面（系统默认），而不指定具体字体。 */
+    font-family: inherit;
     font-size: 16px;
     line-height: 1.5;
     box-sizing: border-box;
