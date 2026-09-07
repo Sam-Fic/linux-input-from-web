@@ -468,10 +468,14 @@ HTML_TEMPLATE = r"""
     color: var(--md-sys-color-on-surface, #1d1b20);
     caret-color: var(--md-sys-color-primary, #6750a4);
     padding: 12px 16px;
-    font-family: inherit;
+    font-family: "Material Symbols Outlined", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     line-height: 1.5;
     box-sizing: border-box;
+  }
+  .field-box textarea::placeholder {
+    color: var(--md-sys-color-on-surface-variant, #49454f);
+    opacity: 1;
   }
   .nav-row {
     display: flex;
@@ -537,12 +541,12 @@ HTML_TEMPLATE = r"""
 <div class="app-container">
   <div class="btn-row">
     <m3e-button id="btn" variant="filled" size="large">
-      <m3e-icon slot="icon" name="send" variant="outlined"></m3e-icon><span class="btn-label">SEND</span>
+      <m3e-icon slot="icon" name="send"></m3e-icon>SEND
     </m3e-button>
     <m3e-icon-button id="clear-btn" variant="standard">
       <m3e-icon name="delete" variant="outlined"></m3e-icon>
     </m3e-icon-button>
-    <m3e-icon-button id="settings-btn" variant="standard">
+    <m3e-icon-button id="settings-btn" variant="standard" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-sheet">
       <m3e-icon name="tune" variant="outlined"></m3e-icon>
     </m3e-icon-button>
     <m3e-icon-button id="lang-btn" variant="standard">
@@ -574,8 +578,8 @@ HTML_TEMPLATE = r"""
 
 <!-- Settings live in a modal bottom sheet (drag handle, swipe to dismiss,
      fit-to-content height) instead of occupying rows in the main layout. -->
-<m3e-bottom-sheet id="settings-sheet" modal handle hideable detents="fit">
-  <div slot="header" class="sheet-header" data-i18n="settings_title">设置</div>
+<m3e-bottom-sheet id="settings-sheet" modal handle hideable detents="fit" aria-labelledby="settings-sheet-header">
+  <div slot="header" id="settings-sheet-header" class="sheet-header" data-i18n="settings_title">设置</div>
   <div class="sheet-body">
     <div class="autostart-row">
       <span class="autostart-label" data-i18n="autostart_label">开机自启（登录后自动弹终端显示二维码）</span>
@@ -600,35 +604,36 @@ HTML_TEMPLATE = r"""
 <script type="importmap">
 {
   "imports": {
-    "lit": "https://unpkg.com/lit@3.3.3/index.js",
-    "lit/": "https://unpkg.com/lit@3.3.3/",
-    "lit-element": "https://unpkg.com/lit-element@4.2.2/lit-element.js",
-    "lit-element/": "https://unpkg.com/lit-element@4.2.2/",
-    "lit-html": "https://unpkg.com/lit-html@3.3.3/lit-html.js",
-    "lit-html/": "https://unpkg.com/lit-html@3.3.3/",
-    "@lit/reactive-element": "https://unpkg.com/@lit/reactive-element@2.1.2/reactive-element.js",
-    "@lit/reactive-element/": "https://unpkg.com/@lit/reactive-element@2.1.2/",
-    "tslib": "https://unpkg.com/tslib@2.8.1/tslib.es6.js",
-    "@m3e/web/core": "https://unpkg.com/@m3e/web@2.7.9/dist/core.min.js",
-    "@m3e/web/core/a11y": "https://unpkg.com/@m3e/web@2.7.9/dist/core-a11y.min.js",
-    "@m3e/web/core/bidi": "https://unpkg.com/@m3e/web@2.7.9/dist/core-bidi.min.js",
-    "@m3e/web/button": "https://unpkg.com/@m3e/web@2.7.9/dist/button.min.js",
-    "@m3e/web/icon-button": "https://unpkg.com/@m3e/web@2.7.9/dist/icon-button.min.js"
+    "tslib": "https://cdn.jsdelivr.net/npm/tslib@2.8.1/+esm",
+    "lit": "https://cdn.jsdelivr.net/npm/lit@3.3.0/+esm",
+    "lit/": "https://cdn.jsdelivr.net/npm/lit@3.3.0/",
+    "lit-html": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/+esm",
+    "lit-html/": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/",
+    "lit-html/directive.js": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/directive.js",
+    "lit-html/directives/if-defined.js": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/directives/if-defined.js",
+    "lit-html/directives/class-map.js": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/directives/class-map.js",
+    "@lit/reactive-element": "https://cdn.jsdelivr.net/npm/@lit/reactive-element@2.0.4/+esm",
+    "@lit/reactive-element/": "https://cdn.jsdelivr.net/npm/@lit/reactive-element@2.0.4/",
+    "@m3e/web/core": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/core.min.js",
+    "@m3e/web/core/a11y": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/core-a11y.min.js",
+    "@m3e/web/core/bidi": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/core-bidi.min.js",
+    "@m3e/web/button": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/button.min.js",
+    "@m3e/web/icon-button": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/icon-button.min.js"
   }
 }
 </script>
-<!-- One ES module: load m3e, then wait until every custom element is upgraded
+<!-- One ES module: load m3e via import map, then wait until every custom element is upgraded
      before touching the DOM. This avoids race conditions where page logic runs
      against un-upgraded <m3e-*> elements. -->
 <script type="module">
   try {
-    await import('https://unpkg.com/@m3e/web@2.7.9/dist/core.min.js');
-    await import('https://unpkg.com/@m3e/web@2.7.9/dist/icon.min.js');
-    await import('https://unpkg.com/@m3e/web@2.7.9/dist/button.min.js');
-    await import('https://unpkg.com/@m3e/web@2.7.9/dist/icon-button.min.js');
-    await import('https://unpkg.com/@m3e/web@2.7.9/dist/switch.min.js');
-    await import('https://unpkg.com/@m3e/web@2.7.9/dist/snackbar.min.js');
-    await import('https://unpkg.com/@m3e/web@2.7.9/dist/bottom-sheet.min.js');
+    await import('@m3e/web/core');
+    await import('@m3e/web/icon');
+    await import('@m3e/web/button');
+    await import('@m3e/web/icon-button');
+    await import('@m3e/web/switch');
+    await import('@m3e/web/snackbar');
+    await import('@m3e/web/bottom-sheet');
   } catch (err) {
     // Surface CDN/boot failures visibly instead of leaving an unstyled, dead page.
     window.__M3E_BOOT_ERROR__ = String((err && err.message) || err);
@@ -787,7 +792,6 @@ if (token) {
 
 const txt = document.getElementById("txt");
 const btn = document.getElementById("btn");
-const btnLabel = btn.querySelector(".btn-label");
 const btnIcon = btn.querySelector('m3e-icon[slot="icon"]');
 const clearBtn = document.getElementById("clear-btn");
 const navLeft = document.getElementById("nav-left");
@@ -947,7 +951,7 @@ async function doSend() {
       txt.value = "";
       updateNav();
       setBtnIconAnimated("check");
-      if (btnLabel) btnLabel.textContent = t("sent");
+      btn.textContent = t("sent");
       setTimeout(() => {
         isSending = false;
         updateButtonState();
@@ -955,7 +959,7 @@ async function doSend() {
       txt.focus();
     } else {
       setBtnIcon("error");
-      if (btnLabel) btnLabel.textContent = t("error_status") + res.status;
+      btn.textContent = t("error_status") + res.status;
       setTimeout(() => {
         isSending = false;
         updateButtonState();
@@ -963,7 +967,7 @@ async function doSend() {
     }
   } catch(e) {
     setBtnIcon("error");
-    if (btnLabel) btnLabel.textContent = t("network_error");
+    btn.textContent = t("network_error");
     setTimeout(() => {
       isSending = false;
       updateButtonState();
@@ -979,15 +983,15 @@ function updateButtonState() {
   if (isSending) {
     btn.disabled = true;
     setBtnIcon("hourglass_empty");
-    if (btnLabel) btnLabel.textContent = t("sending");
+    btn.textContent = t("sending");
   } else if (!isConnected) {
     btn.disabled = true;
     setBtnIcon("wifi_off");
-    if (btnLabel) btnLabel.textContent = t("offline");
+    btn.textContent = t("offline");
   } else {
     btn.disabled = false;
     setBtnIcon("send");
-    if (btnLabel) btnLabel.textContent = t("send");
+    btn.textContent = t("send");
   }
 }
 
@@ -1133,7 +1137,14 @@ refreshPasteKeySwitch();
 /* --- Settings bottom sheet --- */
 const settingsBtn = document.getElementById("settings-btn");
 const settingsSheet = document.getElementById("settings-sheet");
-settingsBtn.addEventListener("click", () => settingsSheet.show());
+const toggleSettings = (open) => {
+  if (open) settingsSheet.show();
+  else settingsSheet.hide();
+  settingsBtn.setAttribute("aria-expanded", String(!!open));
+};
+settingsBtn.addEventListener("click", () => toggleSettings(true));
+settingsSheet.addEventListener("opened", () => settingsBtn.setAttribute("aria-expanded", "true"));
+settingsSheet.addEventListener("closed", () => settingsBtn.setAttribute("aria-expanded", "false"));
 
 /* --- Language switch --- */
 const langBtn = document.getElementById("lang-btn");
