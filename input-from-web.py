@@ -618,7 +618,11 @@ HTML_TEMPLATE = r"""
     "@m3e/web/core/a11y": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/core-a11y.min.js",
     "@m3e/web/core/bidi": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/core-bidi.min.js",
     "@m3e/web/button": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/button.min.js",
-    "@m3e/web/icon-button": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/icon-button.min.js"
+    "@m3e/web/icon": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/icon.min.js",
+    "@m3e/web/icon-button": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/icon-button.min.js",
+    "@m3e/web/switch": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/switch.min.js",
+    "@m3e/web/snackbar": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/snackbar.min.js",
+    "@m3e/web/bottom-sheet": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/bottom-sheet.min.js"
   }
 }
 </script>
