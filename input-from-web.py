@@ -541,7 +541,7 @@ HTML_TEMPLATE = r"""
 <div class="app-container">
   <div class="btn-row">
     <m3e-button id="btn" variant="filled" size="large">
-      <m3e-icon slot="icon" name="send"></m3e-icon>SEND
+      <m3e-icon slot="icon" name="send" variant="outlined"></m3e-icon><span class="btn-label">SEND</span>
     </m3e-button>
     <m3e-icon-button id="clear-btn" variant="standard">
       <m3e-icon name="delete" variant="outlined"></m3e-icon>
@@ -797,6 +797,7 @@ if (token) {
 const txt = document.getElementById("txt");
 const btn = document.getElementById("btn");
 const btnIcon = btn.querySelector('m3e-icon[slot="icon"]');
+const btnLabel = btn.querySelector(".btn-label");
 const clearBtn = document.getElementById("clear-btn");
 const navLeft = document.getElementById("nav-left");
 const navRight = document.getElementById("nav-right");
@@ -955,7 +956,7 @@ async function doSend() {
       txt.value = "";
       updateNav();
       setBtnIconAnimated("check");
-      btn.textContent = t("sent");
+      btnLabel.textContent = t("sent");
       setTimeout(() => {
         isSending = false;
         updateButtonState();
@@ -963,7 +964,7 @@ async function doSend() {
       txt.focus();
     } else {
       setBtnIcon("error");
-      btn.textContent = t("error_status") + res.status;
+      btnLabel.textContent = t("error_status") + res.status;
       setTimeout(() => {
         isSending = false;
         updateButtonState();
@@ -971,7 +972,7 @@ async function doSend() {
     }
   } catch(e) {
     setBtnIcon("error");
-    btn.textContent = t("network_error");
+    btnLabel.textContent = t("network_error");
     setTimeout(() => {
       isSending = false;
       updateButtonState();
@@ -987,15 +988,15 @@ function updateButtonState() {
   if (isSending) {
     btn.disabled = true;
     setBtnIcon("hourglass_empty");
-    btn.textContent = t("sending");
+    btnLabel.textContent = t("sending");
   } else if (!isConnected) {
     btn.disabled = true;
     setBtnIcon("wifi_off");
-    btn.textContent = t("offline");
+    btnLabel.textContent = t("offline");
   } else {
     btn.disabled = false;
     setBtnIcon("send");
-    btn.textContent = t("send");
+    btnLabel.textContent = t("send");
   }
 }
 
