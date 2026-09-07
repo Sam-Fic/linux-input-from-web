@@ -12,3 +12,6 @@ debian/input-from-web/
 
 # Browser GUI test evidence (session artifacts)
 gui-test-screenshots/
+
+# Agent workspace data (CodeBuddy memory / working files)
+.codebuddy/

@@ -372,7 +372,6 @@ HTML_TEMPLATE = r"""
     overscroll-behavior: none;
     background-color: var(--md-sys-color-surface-container, #f3edf7);
     color: var(--md-sys-color-on-surface, #1d1b20);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     transition: background-color 0.3s, color 0.3s;
   }
   .app-container {
@@ -399,6 +398,7 @@ HTML_TEMPLATE = r"""
   .btn-row m3e-button#btn {
     --m3e-button-shape-pressed-morph: 16px;
   }
+  /* SEND 按钮使用组件默认字体显示文字（不指定特殊图标字体，避免连字问题）。 */
   /* Success feedback: the icon flies out of the clipped wrapper and the new
      one flies back in. */
   @keyframes btn-icon-out {
@@ -468,7 +468,6 @@ HTML_TEMPLATE = r"""
     color: var(--md-sys-color-on-surface, #1d1b20);
     caret-color: var(--md-sys-color-primary, #6750a4);
     padding: 12px 16px;
-    font-family: "Material Symbols Outlined", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     line-height: 1.5;
     box-sizing: border-box;
@@ -644,7 +643,7 @@ HTML_TEMPLATE = r"""
     const banner = document.createElement('div');
     banner.textContent = 'Failed to load UI components: ' + window.__M3E_BOOT_ERROR__;
     banner.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;background:#b3261e;color:#fff;'
-      + 'padding:12px 16px;border-radius:12px;z-index:9999;font:14px/1.4 system-ui,sans-serif';
+      + 'padding:12px 16px;border-radius:12px;z-index:9999;font-size:14px;line-height:1.4';
     document.body.appendChild(banner);
     throw err;
   }
@@ -808,6 +807,12 @@ function setBtnIcon(name) {
   if (btnIcon) btnIcon.setAttribute("name", name);
 }
 
+// Set the text label and make it visible.
+function setBtnLabel(text) {
+  btnLabel.textContent = text;
+  btnLabel.style.display = "";
+}
+
 // Expressive swap: current icon flies out (clipped by the button wrapper),
 // then the new icon flies in. Falls back to an instant swap without motion.
 function setBtnIconAnimated(name) {
@@ -956,7 +961,7 @@ async function doSend() {
       txt.value = "";
       updateNav();
       setBtnIconAnimated("check");
-      btnLabel.textContent = t("sent");
+      setBtnLabel(t("sent"));
       setTimeout(() => {
         isSending = false;
         updateButtonState();
@@ -964,7 +969,7 @@ async function doSend() {
       txt.focus();
     } else {
       setBtnIcon("error");
-      btnLabel.textContent = t("error_status") + res.status;
+      setBtnLabel(t("error_status") + res.status);
       setTimeout(() => {
         isSending = false;
         updateButtonState();
@@ -972,7 +977,7 @@ async function doSend() {
     }
   } catch(e) {
     setBtnIcon("error");
-    btnLabel.textContent = t("network_error");
+    setBtnLabel(t("network_error"));
     setTimeout(() => {
       isSending = false;
       updateButtonState();
@@ -988,15 +993,15 @@ function updateButtonState() {
   if (isSending) {
     btn.disabled = true;
     setBtnIcon("hourglass_empty");
-    btnLabel.textContent = t("sending");
+    setBtnLabel(t("sending"));
   } else if (!isConnected) {
     btn.disabled = true;
     setBtnIcon("wifi_off");
-    btnLabel.textContent = t("offline");
+    setBtnLabel(t("offline"));
   } else {
     btn.disabled = false;
     setBtnIcon("send");
-    btnLabel.textContent = t("send");
+    setBtnLabel(t("send"));
   }
 }
 
