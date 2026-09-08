@@ -95,6 +95,14 @@ dpkg-buildpackage -us -uc -b
 ./run.sh --profile work           # use the "work" profile from config
 ```
 
+### In-app settings
+
+Most of the options above (input method, auto-paste, paste shortcut,
+auto-Enter, voice command, security token) can also be toggled live from the
+phone UI — open the **settings sheet** (tune icon) and flip the switches.
+Changes persist to the active profile in `~/.input-from-web-conf.json`.
+`--port` and `--profile` are startup-only and remain command-line options.
+
 ## Configuration
 
 On first run, a config file is created at `~/.input-from-web-conf.json` with

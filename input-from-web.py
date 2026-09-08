@@ -589,13 +589,33 @@ HTML_TEMPLATE = r"""
     </div>
 
     <div class="autostart-row">
-      <span class="autostart-label" data-i18n="enter_label">发送后自动按 Enter</span>
-      <m3e-switch id="enter-switch"></m3e-switch>
+      <span class="autostart-label" data-i18n="method_label">剪贴板模式（复制粘贴，而非直接键入）</span>
+      <m3e-switch id="method-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="auto_paste_label">复制后自动粘贴（剪贴板模式下生效）</span>
+      <m3e-switch id="auto-paste-switch"></m3e-switch>
     </div>
 
     <div class="autostart-row">
       <span class="autostart-label" data-i18n="paste_key_label">粘贴快捷键使用 Ctrl+Shift+V（默认 Ctrl+V）</span>
       <m3e-switch id="paste-key-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="enter_label">发送后自动按 Enter</span>
+      <m3e-switch id="enter-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="voice_label">语音指令：说 “send” 自动发送</span>
+      <m3e-switch id="voice-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="token_label">启用安全令牌（URL 携带密钥）</span>
+      <m3e-switch id="token-switch"></m3e-switch>
     </div>
   </div>
 </m3e-bottom-sheet>
@@ -711,6 +731,18 @@ const I18N = {
     lang_label: "Switch language",
     prev_label: "Previous entry",
     next_label: "Next entry",
+    method_label: "Clipboard mode (copy & paste, not direct typing)",
+    method_on: "Clipboard mode",
+    method_off: "Direct typing mode",
+    auto_paste_label: "Auto-paste after copy (clipboard mode only)",
+    auto_paste_on: "Auto-paste enabled",
+    auto_paste_off: "Auto-paste disabled",
+    voice_label: "Voice command: say 'send' to send",
+    voice_on: "Voice command enabled",
+    voice_off: "Voice command disabled",
+    token_label: "Security token (URL secret)",
+    token_on: "Security token enabled",
+    token_off: "Security token DISABLED (trusted network only!)",
   },
   zh: {
     title: "输入",
@@ -738,6 +770,18 @@ const I18N = {
     lang_label: "切换语言",
     prev_label: "上一条",
     next_label: "下一条",
+    method_label: "剪贴板模式（复制粘贴，而非直接键入）",
+    method_on: "已切换为剪贴板模式",
+    method_off: "已切换为直接键入",
+    auto_paste_label: "复制后自动粘贴（剪贴板模式下生效）",
+    auto_paste_on: "已开启自动粘贴",
+    auto_paste_off: "已关闭自动粘贴",
+    voice_label: "语音指令：说 “send” 自动发送",
+    voice_on: "已开启语音指令",
+    voice_off: "已关闭语音指令",
+    token_label: "启用安全令牌（URL 携带密钥）",
+    token_on: "已启用安全令牌",
+    token_off: "已关闭安全令牌（仅限可信网络！）",
   },
 };
 
@@ -1065,87 +1109,99 @@ autostartSwitch.addEventListener("change", async () => {
 
 refreshAutostart();
 
-/* --- Auto-press-Enter toggle --- */
-const enterSwitch = document.getElementById("enter-switch");
-
-async function refreshEnterSwitch() {
-  try {
-    const r = await fetch("/settings?token=" + encodeURIComponent(token));
-    if (r.ok) {
-      const data = await r.json();
-      enterSwitch.checked = !!data.auto_press_enter;
-    }
-  } catch (e) { /* ignore */ }
-}
-
-enterSwitch.addEventListener("change", async () => {
-  const want = enterSwitch.checked;
-  enterSwitch.disabled = true;
-  try {
-    const r = await fetch("/settings?token=" + encodeURIComponent(token), {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({auto_press_enter: want}),
-    });
-    if (r.ok) {
-      window.M3eSnackbar.open(want ? t("enter_on") : t("enter_off"));
-    } else {
-      enterSwitch.checked = !want;
-      window.M3eSnackbar.open(t("autostart_err") + r.status);
-    }
-  } catch (e) {
-    enterSwitch.checked = !want;
-    window.M3eSnackbar.open(t("autostart_neterr"));
-  } finally {
-    enterSwitch.disabled = false;
-  }
-});
-
-refreshEnterSwitch();
-
-/* --- Paste key toggle (Ctrl+V ⇄ Ctrl+Shift+V) --- */
+/* --- Settings toggles (unified) ---
+   Each switch flips a profile field at runtime via /settings.
+   `boolFields` send a boolean; `mapFields` translate on/off to a string. */
+const methodSwitch = document.getElementById("method-switch");
+const autoPasteSwitch = document.getElementById("auto-paste-switch");
 const pasteKeySwitch = document.getElementById("paste-key-switch");
+const enterSwitch = document.getElementById("enter-switch");
+const voiceSwitch = document.getElementById("voice-switch");
+const tokenSwitch = document.getElementById("token-switch");
 
-async function refreshPasteKeySwitch() {
+// Switches whose effect only makes sense in clipboard mode.
+const methodDependent = [autoPasteSwitch, pasteKeySwitch];
+
+function syncMethodDependent() {
+  const isClipboard = methodSwitch.checked;
+  for (const sw of methodDependent) {
+    sw.disabled = !isClipboard;
+    sw.closest(".autostart-row").style.opacity = isClipboard ? "1" : "0.4";
+  }
+}
+
+// Generic toggle handler: builds the POST body from `want`, shows the right
+// snackbar, and reverts the switch on any failure.
+function wireToggle(sw, bodyFn, okMsgFn) {
+  sw.addEventListener("change", async () => {
+    const want = sw.checked;
+    sw.disabled = true;
+    try {
+      const r = await fetch("/settings?token=" + encodeURIComponent(token), {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(bodyFn(want)),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && !data.error) {
+        window.M3eSnackbar.open(okMsgFn(want));
+        if (sw === methodSwitch) syncMethodDependent();
+      } else {
+        sw.checked = !want;
+        window.M3eSnackbar.open(t("autostart_err") + (data.error || r.status));
+      }
+    } catch (e) {
+      sw.checked = !want;
+      window.M3eSnackbar.open(t("autostart_neterr"));
+    } finally {
+      sw.disabled = false;
+    }
+  });
+}
+
+wireToggle(methodSwitch,
+  (want) => ({method: want ? "clipboard" : "type"}),
+  (want) => want ? t("method_on") : t("method_off"));
+
+wireToggle(autoPasteSwitch,
+  (want) => ({auto_paste: want}),
+  (want) => want ? t("auto_paste_on") : t("auto_paste_off"));
+
+wireToggle(pasteKeySwitch,
+  (want) => ({paste_key: want ? "ctrl+shift+v" : "ctrl+v"}),
+  (want) => want ? t("paste_key_on") : t("paste_key_off"));
+
+wireToggle(enterSwitch,
+  (want) => ({auto_press_enter: want}),
+  (want) => want ? t("enter_on") : t("enter_off"));
+
+wireToggle(voiceSwitch,
+  (want) => ({voice_send_enabled: want}),
+  (want) => want ? t("voice_on") : t("voice_off"));
+
+wireToggle(tokenSwitch,
+  (want) => ({use_security_token: want}),
+  (want) => want ? t("token_on") : t("token_off"));
+
+/* Pull the live state of every toggle from the server (reflects CLI/profile
+   overrides too) so the sheet always shows the truth. */
+async function refreshSettings() {
   try {
     const r = await fetch("/settings?token=" + encodeURIComponent(token));
     if (r.ok) {
-      const data = await r.json();
-      pasteKeySwitch.checked = data.paste_key === "ctrl+shift+v";
+      const d = await r.json();
+      methodSwitch.checked = d.method === "clipboard";
+      autoPasteSwitch.checked = !!d.auto_paste;
+      pasteKeySwitch.checked = d.paste_key === "ctrl+shift+v";
+      enterSwitch.checked = !!d.auto_press_enter;
+      voiceSwitch.checked = !!d.voice_send_enabled;
+      tokenSwitch.checked = !!d.use_security_token;
+      syncMethodDependent();
     }
   } catch (e) { /* ignore */ }
 }
 
-pasteKeySwitch.addEventListener("change", async () => {
-  const want = pasteKeySwitch.checked ? "ctrl+shift+v" : "ctrl+v";
-  pasteKeySwitch.disabled = true;
-  try {
-    const r = await fetch("/settings?token=" + encodeURIComponent(token), {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({paste_key: want}),
-    });
-    if (r.ok) {
-      const data = await r.json().catch(() => ({}));
-      if (data.error) {
-        pasteKeySwitch.checked = !pasteKeySwitch.checked;
-        window.M3eSnackbar.open(t("autostart_err") + data.error);
-      } else {
-        window.M3eSnackbar.open(want === "ctrl+shift+v" ? t("paste_key_on") : t("paste_key_off"));
-      }
-    } else {
-      pasteKeySwitch.checked = !pasteKeySwitch.checked;
-      window.M3eSnackbar.open(t("autostart_err") + r.status);
-    }
-  } catch (e) {
-    pasteKeySwitch.checked = !pasteKeySwitch.checked;
-    window.M3eSnackbar.open(t("autostart_neterr"));
-  } finally {
-    pasteKeySwitch.disabled = false;
-  }
-});
-
-refreshPasteKeySwitch();
+refreshSettings();
 
 /* --- Settings bottom sheet --- */
 const settingsBtn = document.getElementById("settings-btn");
@@ -1338,19 +1394,33 @@ def autostart():
 
 @app.route("/settings", methods=["GET", "POST"])
 def settings():
-    """Read or update profile-level toggles. Token-protected, like /send."""
+    """Read or update profile-level toggles. Token-protected, like /send.
+
+    Every field here can also be set on the command line / config file; this
+    endpoint lets the phone UI flip them at runtime and persist them back to
+    the active profile in ~/.input-from-web-conf.json.
+    """
     global PROFILE, AUTO_PRESS_ENTER, PASTE_KEY, FULL_CONFIG
+    global METHOD, AUTO_PASTE, USE_TOKEN
     check_token()
     if request.method == "GET":
         return {
-            "auto_press_enter": AUTO_PRESS_ENTER,
+            "method": METHOD,
+            "auto_paste": AUTO_PASTE,
             "paste_key": PASTE_KEY,
+            "auto_press_enter": AUTO_PRESS_ENTER,
+            "use_security_token": USE_TOKEN,
+            "voice_send_enabled": (PROFILE.get("voice_send") or {}).get("enabled", True),
         }
     data = request.get_json(force=True, silent=True) or {}
     dirty = False
-    if "auto_press_enter" in data:
-        AUTO_PRESS_ENTER = bool(data["auto_press_enter"])
-        PROFILE["auto_press_enter"] = AUTO_PRESS_ENTER
+    if "method" in data and data["method"] in ("type", "clipboard"):
+        METHOD = data["method"]
+        PROFILE["method"] = METHOD
+        dirty = True
+    if "auto_paste" in data:
+        AUTO_PASTE = bool(data["auto_paste"])
+        PROFILE["auto_paste"] = AUTO_PASTE
         dirty = True
     if "paste_key" in data:
         requested = str(data["paste_key"]).strip().lower()
@@ -1360,6 +1430,18 @@ def settings():
             dirty = True
         else:
             return {"error": "paste_key must be 'ctrl+v' or 'ctrl+shift+v'"}, 400
+    if "auto_press_enter" in data:
+        AUTO_PRESS_ENTER = bool(data["auto_press_enter"])
+        PROFILE["auto_press_enter"] = AUTO_PRESS_ENTER
+        dirty = True
+    if "use_security_token" in data:
+        USE_TOKEN = bool(data["use_security_token"])
+        PROFILE["use_security_token"] = USE_TOKEN
+        dirty = True
+    if "voice_send_enabled" in data:
+        vs = PROFILE.setdefault("voice_send", {})
+        vs["enabled"] = bool(data["voice_send_enabled"])
+        dirty = True
     if dirty and FULL_CONFIG is not None and CURRENT_PROFILE_NAME in FULL_CONFIG.get("profiles", {}):
         FULL_CONFIG["profiles"][CURRENT_PROFILE_NAME] = PROFILE
         try:
@@ -1368,8 +1450,12 @@ def settings():
             print(f"Failed to persist settings: {e}", file=sys.stderr)
     return {
         "ok": True,
-        "auto_press_enter": AUTO_PRESS_ENTER,
+        "method": METHOD,
+        "auto_paste": AUTO_PASTE,
         "paste_key": PASTE_KEY,
+        "auto_press_enter": AUTO_PRESS_ENTER,
+        "use_security_token": USE_TOKEN,
+        "voice_send_enabled": (PROFILE.get("voice_send") or {}).get("enabled", True),
     }
 
 
