@@ -524,6 +524,23 @@ HTML_TEMPLATE = r"""
     flex: 1 1 auto;
     min-width: 0;
   }
+  /* Language selector: label on top, full-width connected button group below. */
+  .lang-group-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 4px 0;
+  }
+  .lang-group-row m3e-button-group {
+    width: 100%;
+  }
+  /* Force the two language buttons to equal width (ignore content length). */
+  .lang-group-row m3e-button-group m3e-button {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+  }
   /* Bottom sheet content */
   .sheet-header {
     font-size: 16px;
@@ -550,9 +567,6 @@ HTML_TEMPLATE = r"""
     </m3e-icon-button>
     <m3e-icon-button id="settings-btn" variant="standard" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-sheet">
       <m3e-icon name="tune" variant="outlined"></m3e-icon>
-    </m3e-icon-button>
-    <m3e-icon-button id="lang-btn" variant="standard">
-      <m3e-icon name="language" variant="outlined"></m3e-icon>
     </m3e-icon-button>
   </div>
 
@@ -617,6 +631,14 @@ HTML_TEMPLATE = r"""
       <span class="autostart-label" data-i18n="token_label">启用安全令牌（URL 携带密钥）</span>
       <m3e-switch id="token-switch"></m3e-switch>
     </div>
+
+    <div class="lang-group-row">
+      <span class="autostart-label" data-i18n="lang_switch_label">界面语言</span>
+      <m3e-button-group variant="connected" id="lang-group">
+        <m3e-button variant="tonal" toggle data-lang="zh">中文</m3e-button>
+        <m3e-button variant="tonal" toggle data-lang="en">English</m3e-button>
+      </m3e-button-group>
+    </div>
   </div>
 </m3e-bottom-sheet>
 
@@ -644,7 +666,8 @@ HTML_TEMPLATE = r"""
     "@m3e/web/icon-button": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/icon-button.min.js",
     "@m3e/web/switch": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/switch.min.js",
     "@m3e/web/snackbar": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/snackbar.min.js",
-    "@m3e/web/bottom-sheet": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/bottom-sheet.min.js"
+    "@m3e/web/bottom-sheet": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/bottom-sheet.min.js",
+    "@m3e/web/button-group": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/button-group.min.js"
   }
 }
 </script>
@@ -660,6 +683,7 @@ HTML_TEMPLATE = r"""
     await import('@m3e/web/switch');
     await import('@m3e/web/snackbar');
     await import('@m3e/web/bottom-sheet');
+    await import('@m3e/web/button-group');
   } catch (err) {
     // Surface CDN/boot failures visibly instead of leaving an unstyled, dead page.
     window.__M3E_BOOT_ERROR__ = String((err && err.message) || err);
@@ -680,6 +704,7 @@ HTML_TEMPLATE = r"""
     customElements.whenDefined('m3e-icon'),
     customElements.whenDefined('m3e-snackbar'),
     customElements.whenDefined('m3e-bottom-sheet'),
+    customElements.whenDefined('m3e-button-group'),
   ]);
 
   /* --- Mobile keyboard fit -------------------------------------------------
@@ -743,6 +768,7 @@ const I18N = {
     token_label: "Security token (URL secret)",
     token_on: "Security token enabled",
     token_off: "Security token DISABLED (trusted network only!)",
+    lang_switch_label: "Language",
   },
   zh: {
     title: "输入",
@@ -782,6 +808,7 @@ const I18N = {
     token_label: "启用安全令牌（URL 携带密钥）",
     token_on: "已启用安全令牌",
     token_off: "已关闭安全令牌（仅限可信网络！）",
+    lang_switch_label: "界面语言",
   },
 };
 
@@ -821,7 +848,6 @@ function applyStaticI18n() {
   const ariaMap = [
     ["settings-btn", "settings_title"],
     ["clear-btn", "clear_label"],
-    ["lang-btn", "lang_label"],
     ["nav-left", "prev_label"],
     ["nav-right", "next_label"],
   ];
@@ -1215,14 +1241,29 @@ settingsBtn.addEventListener("click", () => toggleSettings(true));
 settingsSheet.addEventListener("opened", () => settingsBtn.setAttribute("aria-expanded", "true"));
 settingsSheet.addEventListener("closed", () => settingsBtn.setAttribute("aria-expanded", "false"));
 
-/* --- Language switch --- */
-const langBtn = document.getElementById("lang-btn");
-langBtn.addEventListener("click", () => {
-  LANG = (LANG === "zh") ? "en" : "zh";
+/* --- Language selector (connected button group inside the settings sheet) --- */
+const langGroup = document.getElementById("lang-group");
+// Mark the button matching the resolved UI language as selected (single-select,
+// so every other button is explicitly unselected too).
+function syncLangGroup() {
+  for (const btn of langGroup.querySelectorAll("m3e-button")) {
+    btn.selected = (btn.dataset.lang === LANG);
+  }
+}
+// m3e-button-group listens to its children's `change` and keeps a single
+// selection in non-multi mode; we just read back which one is now selected.
+langGroup.addEventListener("change", () => {
+  for (const btn of langGroup.querySelectorAll("m3e-button")) {
+    if (btn.selected) {
+      LANG = btn.dataset.lang;
+      break;
+    }
+  }
   localStorage.setItem(LANG_STORAGE_KEY, LANG);
   applyStaticI18n();
   updateButtonState();
 });
+syncLangGroup();
 
 applyStaticI18n();
 updateButtonState();
