@@ -260,6 +260,21 @@ HTML_TEMPLATE = r"""
       if (th === "dark") { root.setAttribute("data-theme", "dark"); root.style.colorScheme = "dark"; }
       else if (th === "light") { root.setAttribute("data-theme", "light"); root.style.colorScheme = "light"; }
       else { root.style.colorScheme = "light dark"; }
+      // Saved accent color: pre-apply the primary family so it doesn't flash purple.
+      var tc = localStorage.getItem("input-from-web-theme-color");
+      if (tc && tc !== "material") {
+        var hx = tc.replace("#", "");
+        var r = parseInt(hx.slice(0, 2), 16), g = parseInt(hx.slice(2, 4), 16), b = parseInt(hx.slice(4, 6), 16);
+        var f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        var L = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        root.classList.add("theme-custom");
+        root.style.setProperty("--seed-color", tc);
+        root.style.setProperty("--seed-on", L > 0.4 ? "#1d1b20" : "#ffffff");
+        var mx = function (p, q, t) { return Math.round(p + (q - p) * t); };
+        var wr = mx(r, 255, 0.85), wg = mx(g, 255, 0.85), wb = mx(b, 255, 0.85);
+        var Ld = 0.2126 * f(wr) + 0.7152 * f(wg) + 0.0722 * f(wb);
+        root.style.setProperty("--seed-on-dark", Ld > 0.4 ? "#1d1b20" : "#ffffff");
+      }
     } catch (e) {}
   })();
 </script>
@@ -427,6 +442,45 @@ HTML_TEMPLATE = r"""
     --md-sys-color-scrim: #000000;
     --md-sys-color-shadow: #000000;
   }
+  /* --- Custom theme color ---
+     When a custom accent is picked we only recolor the PRIMARY family; secondary,
+     tertiary and neutral stay at the Material baseline. Tints are derived with
+     color-mix against the current surface tone, so they adapt to light/dark.
+     "material" mode (no --seed-color) falls back to the baseline above. */
+  :root.theme-custom {
+    --md-sys-color-primary: var(--seed-color);
+    --md-sys-color-on-primary: var(--seed-on);
+    --md-sys-color-primary-container: color-mix(in srgb, var(--seed-color) 22%, var(--md-sys-color-surface-container));
+    --md-sys-color-on-primary-container: color-mix(in srgb, var(--seed-color) 75%, black);
+    --md-sys-color-inverse-primary: var(--seed-color);
+    --md-sys-color-primary-fixed: color-mix(in srgb, var(--seed-color) 82%, white);
+    --md-sys-color-primary-fixed-dim: color-mix(in srgb, var(--seed-color) 60%, white);
+    --md-sys-color-on-primary-fixed: color-mix(in srgb, var(--seed-color) 75%, black);
+    --md-sys-color-on-primary-fixed-variant: color-mix(in srgb, var(--seed-color) 50%, black);
+  }
+  :root.theme-custom[data-theme="dark"] {
+    --md-sys-color-primary: color-mix(in srgb, var(--seed-color) 85%, white);
+    --md-sys-color-on-primary: var(--seed-on-dark);
+    --md-sys-color-primary-container: color-mix(in srgb, var(--seed-color) 30%, var(--md-sys-color-surface-container));
+    --md-sys-color-on-primary-container: color-mix(in srgb, var(--seed-color) 72%, white);
+    --md-sys-color-primary-fixed: color-mix(in srgb, var(--seed-color) 70%, white);
+    --md-sys-color-primary-fixed-dim: var(--seed-color);
+    --md-sys-color-on-primary-fixed: color-mix(in srgb, var(--seed-color) 75%, black);
+    --md-sys-color-on-primary-fixed-variant: color-mix(in srgb, var(--seed-color) 55%, black);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root.theme-custom:not([data-theme="light"]) {
+      --md-sys-color-primary: color-mix(in srgb, var(--seed-color) 85%, white);
+      --md-sys-color-on-primary: var(--seed-on-dark);
+      --md-sys-color-primary-container: color-mix(in srgb, var(--seed-color) 30%, var(--md-sys-color-surface-container));
+      --md-sys-color-on-primary-container: color-mix(in srgb, var(--seed-color) 72%, white);
+      --md-sys-color-primary-fixed: color-mix(in srgb, var(--seed-color) 70%, white);
+      --md-sys-color-primary-fixed-dim: var(--seed-color);
+      --md-sys-color-on-primary-fixed: color-mix(in srgb, var(--seed-color) 75%, black);
+      --md-sys-color-on-primary-fixed-variant: color-mix(in srgb, var(--seed-color) 55%, black);
+    }
+  }
+
   html, body {
     height: 100%;
     margin: 0;
@@ -618,6 +672,35 @@ HTML_TEMPLATE = r"""
   .theme-group-row m3e-button-group {
     width: 100%;
   }
+  /* Theme color: label, a grid of preset swatches, and a "Material" reset button. */
+  .color-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+    padding: 4px 0;
+  }
+  .swatch-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .swatch {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+    transition: transform 0.12s ease;
+  }
+  .swatch:hover { transform: scale(1.08); }
+  .swatch.selected {
+    outline: 3px solid var(--md-sys-color-primary, #6750A4);
+    outline-offset: 3px;
+  }
+  #theme-material-btn { align-self: flex-start; }
   /* Bottom sheet content */
   .sheet-header {
     font-size: 16px;
@@ -724,6 +807,12 @@ HTML_TEMPLATE = r"""
         <m3e-button variant="tonal" toggle data-theme="dark" data-i18n="theme_dark">深色</m3e-button>
         <m3e-button variant="tonal" toggle data-theme="auto" data-i18n="theme_auto">自动</m3e-button>
       </m3e-button-group>
+    </div>
+
+    <div class="color-row">
+      <span class="autostart-label" data-i18n="theme_color_label">主题色</span>
+      <div class="swatch-grid" id="theme-color-grid"></div>
+      <m3e-button id="theme-material-btn" variant="tonal" toggle data-i18n="theme_material">Material 系统配色</m3e-button>
     </div>
   </div>
 </m3e-bottom-sheet>
@@ -859,6 +948,8 @@ const I18N = {
     theme_light: "Light",
     theme_dark: "Dark",
     theme_auto: "Auto",
+    theme_color_label: "Accent color",
+    theme_material: "Material (system colors)",
   },
   zh: {
     title: "输入",
@@ -903,6 +994,8 @@ const I18N = {
     theme_light: "浅色",
     theme_dark: "深色",
     theme_auto: "自动",
+    theme_color_label: "主题色",
+    theme_material: "Material 系统配色",
   },
 };
 
@@ -1383,7 +1476,8 @@ function applyTheme(theme) {
     root.style.colorScheme = theme;
   }
   if (themeMeta) {
-    themeMeta.setAttribute("content", resolvedThemeIsDark(theme) ? "#1a1a1a" : "#6750A4");
+    const lightMeta = (themeColor && themeColor !== "material") ? themeColor : "#6750A4";
+    themeMeta.setAttribute("content", resolvedThemeIsDark(theme) ? "#1a1a1a" : lightMeta);
   }
 }
 
@@ -1410,8 +1504,86 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 });
 
 let THEME = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+const THEME_COLOR_KEY = "input-from-web-theme-color";
+let themeColor = localStorage.getItem(THEME_COLOR_KEY) || "material";
 applyTheme(THEME);
 syncThemeGroup();
+
+/* --- Accent color (theme color) ---
+   A grid of preset default colors plus a "Material" option that restores the
+   system Material baseline palette. Custom colors only recolor the primary
+   family (the heavy lifting happens in CSS via the --seed-color vars). */
+const PRESET_COLORS = ["#6750A4", "#4F6FED", "#2E7D32", "#E53935", "#F57C00", "#00897B"];
+const themeColorGrid = document.getElementById("theme-color-grid");
+const themeMaterialBtn = document.getElementById("theme-material-btn");
+
+function hexToRgb(h) {
+  h = h.replace("#", "");
+  return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+}
+function mixHex(a, b, t) {
+  const x = hexToRgb(a), y = hexToRgb(b);
+  const m = (p, q) => Math.round(p + (q - p) * t);
+  return "#" + [m(x.r, y.r), m(x.g, y.g), m(x.b, y.b)].map(v => v.toString(16).padStart(2, "0")).join("");
+}
+function luminance(h) {
+  const c = hexToRgb(h);
+  const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
+}
+function contrastText(h) { return luminance(h) > 0.4 ? "#1d1b20" : "#ffffff"; }
+
+// Apply a custom accent (hex) or fall back to the Material baseline ("material").
+function applyThemeColor(color) {
+  const root = document.documentElement;
+  if (!color || color === "material") {
+    root.classList.remove("theme-custom");
+    root.style.removeProperty("--seed-color");
+    root.style.removeProperty("--seed-on");
+    root.style.removeProperty("--seed-on-dark");
+  } else {
+    root.classList.add("theme-custom");
+    root.style.setProperty("--seed-color", color);
+    root.style.setProperty("--seed-on", contrastText(color));
+    root.style.setProperty("--seed-on-dark", contrastText(mixHex(color, "#ffffff", 0.85)));
+  }
+}
+
+function syncThemeColorUI() {
+  for (const sw of themeColorGrid.querySelectorAll(".swatch")) {
+    sw.classList.toggle("selected", sw.dataset.color === themeColor);
+  }
+  themeMaterialBtn.selected = (themeColor === "material");
+}
+
+// Build the preset swatch grid from PRESET_COLORS.
+for (const color of PRESET_COLORS) {
+  const b = document.createElement("button");
+  b.className = "swatch";
+  b.dataset.color = color;
+  b.style.background = color;
+  b.setAttribute("aria-label", color);
+  b.addEventListener("click", () => {
+    themeColor = color;
+    localStorage.setItem(THEME_COLOR_KEY, themeColor);
+    applyThemeColor(themeColor);
+    syncThemeColorUI();
+    applyTheme(THEME); // refresh browser-chrome theme-color meta
+  });
+  themeColorGrid.appendChild(b);
+}
+themeMaterialBtn.addEventListener("change", () => {
+  if (themeMaterialBtn.selected) {
+    themeColor = "material";
+    localStorage.setItem(THEME_COLOR_KEY, themeColor);
+    applyThemeColor(themeColor);
+    syncThemeColorUI();
+    applyTheme(THEME);
+  }
+});
+
+applyThemeColor(themeColor);
+syncThemeColorUI();
 
 applyStaticI18n();
 updateButtonState();
