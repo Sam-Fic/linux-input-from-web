@@ -1196,6 +1196,7 @@ async function doSend() {
   const text = txt.value;
   if (!text) return;
   isSending = true;
+  transient = false;
   updateButtonState();
   try {
     const res = await fetch("/send?token=" + encodeURIComponent(token), {
@@ -1210,26 +1211,34 @@ async function doSend() {
       txt.value = "";
       updateNavInfo();
       updateNav();
+      // 已进入“已发送”状态：立即结束 sending，并用 transient 锁定显示，
+      // 避免下方每秒一次的 ping 刷新把“已发送！”覆盖回“发送中…”。
+      isSending = false;
+      transient = true;
       setBtnIconAnimated("check");
       setBtnLabel(t("sent"));
       setTimeout(() => {
-        isSending = false;
+        transient = false;
         updateButtonState();
       }, 800);
       txt.focus();
     } else {
+      isSending = false;
+      transient = true;
       setBtnIcon("error");
       setBtnLabel(t("error_status") + res.status);
       setTimeout(() => {
-        isSending = false;
+        transient = false;
         updateButtonState();
       }, 2000);
     }
   } catch(e) {
+    isSending = false;
+    transient = true;
     setBtnIcon("error");
     setBtnLabel(t("network_error"));
     setTimeout(() => {
-      isSending = false;
+      transient = false;
       updateButtonState();
     }, 2000);
   }
@@ -1238,12 +1247,17 @@ async function doSend() {
 /* --- Connection State --- */
 let isConnected = false;
 let isSending = false;
+let transient = false;   // 发送成功/失败的短暂提示阶段，期间不被 ping 刷新覆盖
 
 function updateButtonState() {
   if (isSending) {
     btn.disabled = true;
     setBtnIcon("hourglass_empty");
     setBtnLabel(t("sending"));
+  } else if (transient) {
+    // 成功/失败提示阶段：保留 setBtnLabel/setBtnIcon 已写入的内容，
+    // 不被每秒一次的 ping（updateButtonState）覆盖回上一个状态。
+    btn.disabled = true;
   } else if (!isConnected) {
     btn.disabled = true;
     setBtnIcon("wifi_off");
