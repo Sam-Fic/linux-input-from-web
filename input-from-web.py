@@ -260,20 +260,16 @@ HTML_TEMPLATE = r"""
       if (th === "dark") { root.setAttribute("data-theme", "dark"); root.style.colorScheme = "dark"; }
       else if (th === "light") { root.setAttribute("data-theme", "light"); root.style.colorScheme = "light"; }
       else { root.style.colorScheme = "light dark"; }
-      // Saved accent color: pre-apply the primary family so it doesn't flash purple.
+      // Pre-apply the saved accent's primary pair so it doesn't flash to the
+      // default Material purple before <m3e-theme> upgrades and takes over.
       var tc = localStorage.getItem("input-from-web-theme-color");
       if (tc && tc !== "material") {
         var hx = tc.replace("#", "");
         var r = parseInt(hx.slice(0, 2), 16), g = parseInt(hx.slice(2, 4), 16), b = parseInt(hx.slice(4, 6), 16);
         var f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
         var L = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-        root.classList.add("theme-custom");
-        root.style.setProperty("--seed-color", tc);
-        root.style.setProperty("--seed-on", L > 0.4 ? "#1d1b20" : "#ffffff");
-        var mx = function (p, q, t) { return Math.round(p + (q - p) * t); };
-        var wr = mx(r, 255, 0.85), wg = mx(g, 255, 0.85), wb = mx(b, 255, 0.85);
-        var Ld = 0.2126 * f(wr) + 0.7152 * f(wg) + 0.0722 * f(wb);
-        root.style.setProperty("--seed-on-dark", Ld > 0.4 ? "#1d1b20" : "#ffffff");
+        root.style.setProperty("--md-sys-color-primary", tc);
+        root.style.setProperty("--md-sys-color-on-primary", L > 0.4 ? "#1d1b20" : "#ffffff");
       }
     } catch (e) {}
   })();
@@ -442,45 +438,6 @@ HTML_TEMPLATE = r"""
     --md-sys-color-scrim: #000000;
     --md-sys-color-shadow: #000000;
   }
-  /* --- Custom theme color ---
-     When a custom accent is picked we only recolor the PRIMARY family; secondary,
-     tertiary and neutral stay at the Material baseline. Tints are derived with
-     color-mix against the current surface tone, so they adapt to light/dark.
-     "material" mode (no --seed-color) falls back to the baseline above. */
-  :root.theme-custom {
-    --md-sys-color-primary: var(--seed-color);
-    --md-sys-color-on-primary: var(--seed-on);
-    --md-sys-color-primary-container: color-mix(in srgb, var(--seed-color) 22%, var(--md-sys-color-surface-container));
-    --md-sys-color-on-primary-container: color-mix(in srgb, var(--seed-color) 75%, black);
-    --md-sys-color-inverse-primary: var(--seed-color);
-    --md-sys-color-primary-fixed: color-mix(in srgb, var(--seed-color) 82%, white);
-    --md-sys-color-primary-fixed-dim: color-mix(in srgb, var(--seed-color) 60%, white);
-    --md-sys-color-on-primary-fixed: color-mix(in srgb, var(--seed-color) 75%, black);
-    --md-sys-color-on-primary-fixed-variant: color-mix(in srgb, var(--seed-color) 50%, black);
-  }
-  :root.theme-custom[data-theme="dark"] {
-    --md-sys-color-primary: color-mix(in srgb, var(--seed-color) 85%, white);
-    --md-sys-color-on-primary: var(--seed-on-dark);
-    --md-sys-color-primary-container: color-mix(in srgb, var(--seed-color) 30%, var(--md-sys-color-surface-container));
-    --md-sys-color-on-primary-container: color-mix(in srgb, var(--seed-color) 72%, white);
-    --md-sys-color-primary-fixed: color-mix(in srgb, var(--seed-color) 70%, white);
-    --md-sys-color-primary-fixed-dim: var(--seed-color);
-    --md-sys-color-on-primary-fixed: color-mix(in srgb, var(--seed-color) 75%, black);
-    --md-sys-color-on-primary-fixed-variant: color-mix(in srgb, var(--seed-color) 55%, black);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root.theme-custom:not([data-theme="light"]) {
-      --md-sys-color-primary: color-mix(in srgb, var(--seed-color) 85%, white);
-      --md-sys-color-on-primary: var(--seed-on-dark);
-      --md-sys-color-primary-container: color-mix(in srgb, var(--seed-color) 30%, var(--md-sys-color-surface-container));
-      --md-sys-color-on-primary-container: color-mix(in srgb, var(--seed-color) 72%, white);
-      --md-sys-color-primary-fixed: color-mix(in srgb, var(--seed-color) 70%, white);
-      --md-sys-color-primary-fixed-dim: var(--seed-color);
-      --md-sys-color-on-primary-fixed: color-mix(in srgb, var(--seed-color) 75%, black);
-      --md-sys-color-on-primary-fixed-variant: color-mix(in srgb, var(--seed-color) 55%, black);
-    }
-  }
-
   html, body {
     height: 100%;
     margin: 0;
@@ -725,6 +682,8 @@ HTML_TEMPLATE = r"""
 </style>
 </head>
 <body>
+<div id="theme-host" style="display:contents">
+<m3e-theme id="app-theme" variant="tonal-spot" color="#6750A4" scheme="auto" style="display:contents">
 <div class="app-container">
   <div class="btn-row">
     <m3e-button id="btn" variant="filled" size="large">
@@ -850,7 +809,8 @@ HTML_TEMPLATE = r"""
     "@m3e/web/switch": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/switch.min.js",
     "@m3e/web/snackbar": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/snackbar.min.js",
     "@m3e/web/bottom-sheet": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/bottom-sheet.min.js",
-    "@m3e/web/button-group": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/button-group.min.js"
+    "@m3e/web/button-group": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/button-group.min.js",
+    "@m3e/web/theme": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/theme.min.js"
   }
 }
 </script>
@@ -867,6 +827,7 @@ HTML_TEMPLATE = r"""
     await import('@m3e/web/snackbar');
     await import('@m3e/web/bottom-sheet');
     await import('@m3e/web/button-group');
+    await import('@m3e/web/theme');
   } catch (err) {
     // Surface CDN/boot failures visibly instead of leaving an unstyled, dead page.
     window.__M3E_BOOT_ERROR__ = String((err && err.message) || err);
@@ -888,7 +849,11 @@ HTML_TEMPLATE = r"""
     customElements.whenDefined('m3e-snackbar'),
     customElements.whenDefined('m3e-bottom-sheet'),
     customElements.whenDefined('m3e-button-group'),
+    customElements.whenDefined('m3e-theme'),
   ]);
+
+  // The theme element drives the entire dynamic-color palette + light/dark scheme.
+  const appTheme = document.getElementById('app-theme');
 
   /* --- Mobile keyboard fit -------------------------------------------------
      When the virtual keyboard opens, keep the layout fitted to the visible
@@ -1501,6 +1466,8 @@ function applyTheme(theme) {
     root.setAttribute("data-theme", theme);
     root.style.colorScheme = theme;
   }
+  // Let <m3e-theme> generate the matching light/dark token set.
+  if (appTheme) appTheme.scheme = theme;
   if (themeMeta) {
     const lightMeta = (themeColor && themeColor !== "material") ? themeColor : "#6750A4";
     themeMeta.setAttribute("content", resolvedThemeIsDark(theme) ? "#1a1a1a" : lightMeta);
@@ -1537,41 +1504,21 @@ syncThemeGroup();
 
 /* --- Accent color (theme color) ---
    A grid of preset default colors plus a "Material" option that restores the
-   system Material baseline palette. Custom colors only recolor the primary
-   family (the heavy lifting happens in CSS via the --seed-color vars). */
+   system Material baseline palette. The full palette is derived from the seed
+   color by <m3e-theme> (see applyThemeColor). */
 const PRESET_COLORS = ["#6750A4", "#4F6FED", "#2E7D32", "#E53935", "#FF6600", "#00897B"];
 const themeColorGrid = document.getElementById("theme-color-grid");
 const themeMaterialBtn = document.getElementById("theme-material-btn");
 
-function hexToRgb(h) {
-  h = h.replace("#", "");
-  return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
-}
-function mixHex(a, b, t) {
-  const x = hexToRgb(a), y = hexToRgb(b);
-  const m = (p, q) => Math.round(p + (q - p) * t);
-  return "#" + [m(x.r, y.r), m(x.g, y.g), m(x.b, y.b)].map(v => v.toString(16).padStart(2, "0")).join("");
-}
-function luminance(h) {
-  const c = hexToRgb(h);
-  const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-  return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
-}
-function contrastText(h) { return luminance(h) > 0.4 ? "#1d1b20" : "#ffffff"; }
-
 // Apply a custom accent (hex) or fall back to the Material baseline ("material").
+// The full primary/secondary/tertiary/neutral/surface palette is generated by
+// <m3e-theme> from the seed color, so we only need to feed it the seed.
 function applyThemeColor(color) {
-  const root = document.documentElement;
+  if (!appTheme) return;
   if (!color || color === "material") {
-    root.classList.remove("theme-custom");
-    root.style.removeProperty("--seed-color");
-    root.style.removeProperty("--seed-on");
-    root.style.removeProperty("--seed-on-dark");
+    appTheme.color = "#6750A4"; // Material default seed
   } else {
-    root.classList.add("theme-custom");
-    root.style.setProperty("--seed-color", color);
-    root.style.setProperty("--seed-on", contrastText(color));
-    root.style.setProperty("--seed-on-dark", contrastText(mixHex(color, "#ffffff", 0.85)));
+    appTheme.color = color;
   }
 }
 
@@ -1618,6 +1565,8 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
 }
 </script>
+</m3e-theme>
+</div>
 </body>
 </html>
 """
