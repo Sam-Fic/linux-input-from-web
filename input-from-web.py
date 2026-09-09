@@ -251,6 +251,18 @@ HTML_TEMPLATE = r"""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <meta name="theme-color" content="#6750A4">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<!-- Apply the saved theme before first paint to avoid a flash of the wrong palette. -->
+<script>
+  (function () {
+    try {
+      var th = localStorage.getItem("input-from-web-theme") || "auto";
+      var root = document.documentElement;
+      if (th === "dark") { root.setAttribute("data-theme", "dark"); root.style.colorScheme = "dark"; }
+      else if (th === "light") { root.setAttribute("data-theme", "light"); root.style.colorScheme = "light"; }
+      else { root.style.colorScheme = "light dark"; }
+    } catch (e) {}
+  })();
+</script>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon.svg">
@@ -312,8 +324,13 @@ HTML_TEMPLATE = r"""
     --md-sys-color-scrim: #000000;
     --md-sys-color-shadow: #000000;
   }
+  /* DARK palette.
+     - Auto (no explicit choice): follows the OS via prefers-color-scheme,
+       unless the user forced light.
+     - Forced dark: applies regardless of the OS setting.
+     The light palette above (:root) is the fallback used for forced light. */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --md-sys-color-primary: #D0BCFF;
       --md-sys-color-on-primary: #381E72;
       --md-sys-color-primary-container: #4F378B;
@@ -361,6 +378,54 @@ HTML_TEMPLATE = r"""
       --md-sys-color-scrim: #000000;
       --md-sys-color-shadow: #000000;
     }
+  }
+  :root[data-theme="dark"] {
+    --md-sys-color-primary: #D0BCFF;
+    --md-sys-color-on-primary: #381E72;
+    --md-sys-color-primary-container: #4F378B;
+    --md-sys-color-on-primary-container: #EADDFF;
+    --md-sys-color-primary-fixed: #EADDFF;
+    --md-sys-color-primary-fixed-dim: #D0BCFF;
+    --md-sys-color-on-primary-fixed: #21005D;
+    --md-sys-color-on-primary-fixed-variant: #4F378B;
+    --md-sys-color-secondary: #CCC2DC;
+    --md-sys-color-on-secondary: #332D41;
+    --md-sys-color-secondary-container: #4A4458;
+    --md-sys-color-on-secondary-container: #E8DEF8;
+    --md-sys-color-secondary-fixed: #E8DEF8;
+    --md-sys-color-secondary-fixed-dim: #CCC2DC;
+    --md-sys-color-on-secondary-fixed: #1D192B;
+    --md-sys-color-on-secondary-fixed-variant: #4A4458;
+    --md-sys-color-tertiary: #EFB8C8;
+    --md-sys-color-on-tertiary: #492532;
+    --md-sys-color-tertiary-container: #633B48;
+    --md-sys-color-on-tertiary-container: #FFD8E4;
+    --md-sys-color-tertiary-fixed: #FFD8E4;
+    --md-sys-color-tertiary-fixed-dim: #EFB8C8;
+    --md-sys-color-on-tertiary-fixed: #31111D;
+    --md-sys-color-on-tertiary-fixed-variant: #633B48;
+    --md-sys-color-error: #F2B8B5;
+    --md-sys-color-on-error: #601410;
+    --md-sys-color-error-container: #8C1D18;
+    --md-sys-color-on-error-container: #F9DEDC;
+    --md-sys-color-surface: #141218;
+    --md-sys-color-on-surface: #E6E0E9;
+    --md-sys-color-surface-variant: #49454F;
+    --md-sys-color-on-surface-variant: #CAC4D0;
+    --md-sys-color-surface-dim: #141218;
+    --md-sys-color-surface-bright: #3B383E;
+    --md-sys-color-surface-container-lowest: #0F0D13;
+    --md-sys-color-surface-container-low: #1D1B20;
+    --md-sys-color-surface-container: #211F26;
+    --md-sys-color-surface-container-high: #2B2930;
+    --md-sys-color-surface-container-highest: #36343B;
+    --md-sys-color-outline: #938F99;
+    --md-sys-color-outline-variant: #49454F;
+    --md-sys-color-inverse-surface: #E6E0E9;
+    --md-sys-color-inverse-on-surface: #313033;
+    --md-sys-color-inverse-primary: #4F378B;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-shadow: #000000;
   }
   html, body {
     height: 100%;
@@ -535,11 +600,23 @@ HTML_TEMPLATE = r"""
   .lang-group-row m3e-button-group {
     width: 100%;
   }
-  /* Force the two language buttons to equal width (ignore content length). */
-  .lang-group-row m3e-button-group m3e-button {
+  /* Force the language/theme buttons to equal width (ignore content length). */
+  .lang-group-row m3e-button-group m3e-button,
+  .theme-group-row m3e-button-group m3e-button {
     flex: 1 1 0;
     min-width: 0;
     justify-content: center;
+  }
+  /* Theme selector: same layout as the language selector. */
+  .theme-group-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 4px 0;
+  }
+  .theme-group-row m3e-button-group {
+    width: 100%;
   }
   /* Bottom sheet content */
   .sheet-header {
@@ -637,6 +714,15 @@ HTML_TEMPLATE = r"""
       <m3e-button-group variant="connected" id="lang-group">
         <m3e-button variant="tonal" toggle data-lang="zh">中文</m3e-button>
         <m3e-button variant="tonal" toggle data-lang="en">English</m3e-button>
+      </m3e-button-group>
+    </div>
+
+    <div class="theme-group-row">
+      <span class="autostart-label" data-i18n="theme_switch_label">主题</span>
+      <m3e-button-group variant="connected" id="theme-group">
+        <m3e-button variant="tonal" toggle data-theme="light" data-i18n="theme_light">浅色</m3e-button>
+        <m3e-button variant="tonal" toggle data-theme="dark" data-i18n="theme_dark">深色</m3e-button>
+        <m3e-button variant="tonal" toggle data-theme="auto" data-i18n="theme_auto">自动</m3e-button>
       </m3e-button-group>
     </div>
   </div>
@@ -769,6 +855,10 @@ const I18N = {
     token_on: "Security token enabled",
     token_off: "Security token DISABLED (trusted network only!)",
     lang_switch_label: "Language",
+    theme_switch_label: "Theme",
+    theme_light: "Light",
+    theme_dark: "Dark",
+    theme_auto: "Auto",
   },
   zh: {
     title: "输入",
@@ -809,6 +899,10 @@ const I18N = {
     token_on: "已启用安全令牌",
     token_off: "已关闭安全令牌（仅限可信网络！）",
     lang_switch_label: "界面语言",
+    theme_switch_label: "主题",
+    theme_light: "浅色",
+    theme_dark: "深色",
+    theme_auto: "自动",
   },
 };
 
@@ -1264,6 +1358,60 @@ langGroup.addEventListener("change", () => {
   updateButtonState();
 });
 syncLangGroup();
+
+/* --- Theme selector (light / dark / auto, follows the OS) ---
+   Purely a UI preference, persisted in localStorage (no server round-trip). */
+const THEME_STORAGE_KEY = "input-from-web-theme";
+const themeGroup = document.getElementById("theme-group");
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+
+function resolvedThemeIsDark(theme) {
+  if (theme === "dark") return true;
+  if (theme === "light") return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+// Apply a theme: toggle the data-theme attribute, the native color-scheme, and
+// the mobile browser-chrome theme-color meta so everything matches.
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === "auto") {
+    root.removeAttribute("data-theme");
+    root.style.colorScheme = "light dark";
+  } else {
+    root.setAttribute("data-theme", theme);
+    root.style.colorScheme = theme;
+  }
+  if (themeMeta) {
+    themeMeta.setAttribute("content", resolvedThemeIsDark(theme) ? "#1a1a1a" : "#6750A4");
+  }
+}
+
+function syncThemeGroup() {
+  for (const btn of themeGroup.querySelectorAll("m3e-button")) {
+    btn.selected = (btn.dataset.theme === THEME);
+  }
+}
+
+themeGroup.addEventListener("change", () => {
+  for (const btn of themeGroup.querySelectorAll("m3e-button")) {
+    if (btn.selected) {
+      THEME = btn.dataset.theme;
+      break;
+    }
+  }
+  localStorage.setItem(THEME_STORAGE_KEY, THEME);
+  applyTheme(THEME);
+});
+
+// Re-evaluate "auto" when the OS theme changes (only matters while in auto mode).
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (THEME === "auto") applyTheme("auto");
+});
+
+let THEME = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+applyTheme(THEME);
+syncThemeGroup();
 
 applyStaticI18n();
 updateButtonState();
