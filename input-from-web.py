@@ -194,8 +194,8 @@ DEFAULT_CONFIG = {
             "voice_send": {
                 "enabled": True,
                 "delay_seconds": 1.5,
-                "send_words": ["send"],
-                "clear_words": ["clear"],
+                "send_words": ["send", "发送"],
+                "clear_words": ["clear", "清除"],
             },
             "substitutions": {
                 "full stop": ".",
@@ -1194,8 +1194,8 @@ function checkVoiceCommand() {
   const words = text.split(/\s+/);
   const lastWord = words[words.length - 1].toLowerCase();
 
-  const sendWords = (vs.send_words || []).map(w => w.toLowerCase());
-  const clearWords = (vs.clear_words || []).map(w => w.toLowerCase());
+  const sendWords = (vs.send_words || []).concat("发送").map(w => w.toLowerCase());
+  const clearWords = (vs.clear_words || []).concat("清除").map(w => w.toLowerCase());
 
   let action = null;
   if (sendWords.includes(lastWord)) action = "send";
