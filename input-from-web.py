@@ -535,9 +535,26 @@ HTML_TEMPLATE = r"""
   .input-field {
     flex: 1;
     display: flex;
+    flex-direction: column;
     min-height: 96px;
     position: relative;
     overflow: visible;
+  }
+  /* Live character counter, pinned to the bottom-right of the input field. */
+  .char-count-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 0;
+    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant, #49454f);
+    flex-shrink: 0;
+  }
+  .char-count {
+    font-variant-numeric: tabular-nums;
+    min-width: 1ch;
+    text-align: right;
   }
   /* Hand-styled M3 outlined field: m3e-form-field's floating label does not
      track multiline textareas, so the box, border notch and textarea are
@@ -734,6 +751,10 @@ HTML_TEMPLATE = r"""
     <div class="field-box">
       <label class="flt-label" for="txt">__LABEL_TYPE_HERE__</label>
       <textarea id="txt" rows="4" autofocus></textarea>
+    </div>
+    <div class="char-count-row">
+      <span class="char-count-label" data-i18n="char_count_label">字数</span>
+      <span class="char-count" id="char-count">0</span>
     </div>
   </div>
 
@@ -950,6 +971,7 @@ const I18N = {
     theme_auto: "Auto",
     theme_color_label: "Accent color",
     theme_material: "Material (system colors)",
+    char_count_label: "Characters",
   },
   zh: {
     title: "输入",
@@ -996,6 +1018,7 @@ const I18N = {
     theme_auto: "自动",
     theme_color_label: "主题色",
     theme_material: "Material 系统配色",
+    char_count_label: "字数",
   },
 };
 
@@ -1061,6 +1084,12 @@ const clearBtn = document.getElementById("clear-btn");
 const navLeft = document.getElementById("nav-left");
 const navRight = document.getElementById("nav-right");
 const navInfo = document.getElementById("nav-info");
+const charCountEl = document.getElementById("char-count");
+
+// Reflect the live number of characters currently typed.
+function updateCharCount() {
+  if (charCountEl) charCountEl.textContent = String(txt.value.length);
+}
 
 // m3e-button has no `icon` JS property — update the slotted <m3e-icon>'s `name` instead.
 function setBtnIcon(name) {
@@ -1119,6 +1148,7 @@ function histBack() {
   histIdx--;
   txt.value = history[histIdx];
   txt.focus();
+  updateCharCount();
   updateNav();
 }
 
@@ -1127,6 +1157,7 @@ function histForward() {
   histIdx++;
   txt.value = histIdx < history.length ? history[histIdx] : draft;
   txt.focus();
+  updateCharCount();
   updateNav();
 }
 
@@ -1194,12 +1225,14 @@ function checkVoiceCommand() {
 txt.addEventListener("input", () => {
   applySubstitutions();
   checkVoiceCommand();
+  updateCharCount();
 });
 
 /* --- Actions --- */
 
 function clearText() {
   txt.value = "";
+  updateCharCount();
   txt.focus();
 }
 
@@ -1219,6 +1252,7 @@ async function doSend() {
       histIdx = history.length;
       draft = "";
       txt.value = "";
+      updateCharCount();
       updateNav();
       setBtnIconAnimated("check");
       setBtnLabel(t("sent"));
@@ -1276,6 +1310,7 @@ setInterval(async () => {
 }, 1000);
 
 updateButtonState();
+updateCharCount();
 
 /* --- Autostart toggle --- */
 const autostartSwitch = document.getElementById("autostart-switch");
