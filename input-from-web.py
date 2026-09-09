@@ -485,6 +485,10 @@ HTML_TEMPLATE = r"""
     height: 100%;
     margin: 0;
     padding: 0;
+    /* 禁用移动端点击时的蓝色高亮 */
+    -webkit-tap-highlight-color: transparent;
+    /* 禁用长按弹出的系统菜单（不影响输入框内的文字编辑） */
+    -webkit-touch-callout: none;
     /* Keep the app fixed to the viewport: when the mobile keyboard opens the
        browser must not pan the page; the flexible input area shrinks instead. */
     overflow: hidden;
@@ -593,6 +597,10 @@ HTML_TEMPLATE = r"""
     font-size: 16px;
     line-height: 1.5;
     box-sizing: border-box;
+    /* 输入框内允许正常的文字选中/编辑（覆盖全局 touch-callout:none） */
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
   }
   .field-box textarea::placeholder {
     color: var(--md-sys-color-on-surface-variant, #49454f);
