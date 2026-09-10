@@ -15,6 +15,10 @@ fi
 if [ ! -d "$DIR/venv" ]; then
     echo "Creating virtual environment..."
     python3 -m venv "$DIR/venv"
+fi
+
+# Install deps if missing (covers a pre-existing but incomplete venv)
+if ! "$DIR/venv/bin/python" -c "import flask, qrcode" >/dev/null 2>&1; then
     echo "Installing dependencies..."
     "$DIR/venv/bin/pip" install --quiet flask qrcode
 fi

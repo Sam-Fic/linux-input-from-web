@@ -18,6 +18,7 @@ from flask import Flask, Response, request, abort, send_from_directory
 import qrcode
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+IS_WIN = sys.platform == "win32"
 app = Flask(__name__)
 
 # Suppress Werkzeug request log for /ping
@@ -42,8 +43,170 @@ CURRENT_PROFILE_NAME = None
 
 CONFIG_PATH = os.path.expanduser("~/.input-from-web-conf.json")
 
-AUTOSTART_DIR = os.path.expanduser("~/.config/autostart")
-AUTOSTART_FILE = os.path.join(AUTOSTART_DIR, "input-from-web.desktop")
+if IS_WIN:
+    AUTOSTART_DIR = os.path.expandvars(
+        r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
+    )
+    AUTOSTART_FILE = os.path.join(AUTOSTART_DIR, "input-from-web.bat")
+else:
+    AUTOSTART_DIR = os.path.expanduser("~/.config/autostart")
+    AUTOSTART_FILE = os.path.join(AUTOSTART_DIR, "input-from-web.desktop")
+
+# --- Windows input backend (ctypes / SendInput / clipboard) ----------------
+if IS_WIN:
+    import ctypes
+    from ctypes import wintypes
+
+    _user32 = ctypes.WinDLL("user32", use_last_error=True)
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    # 64-bit: default restype is c_int and truncates pointer handles.
+    _user32.OpenClipboard.argtypes = [wintypes.HWND]
+    _user32.OpenClipboard.restype = wintypes.BOOL
+    _user32.SetClipboardData.argtypes = [wintypes.UINT, wintypes.HANDLE]
+    _user32.SetClipboardData.restype = wintypes.HANDLE
+    _user32.EmptyClipboard.argtypes = []
+    _user32.EmptyClipboard.restype = wintypes.BOOL
+    _user32.CloseClipboard.argtypes = []
+    _user32.CloseClipboard.restype = wintypes.BOOL
+    _user32.SendInput.argtypes = [wintypes.UINT, ctypes.c_void_p, ctypes.c_int]
+    _user32.SendInput.restype = wintypes.UINT
+    _kernel32.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
+    _kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
+    _kernel32.GlobalLock.argtypes = [wintypes.HGLOBAL]
+    _kernel32.GlobalLock.restype = ctypes.c_void_p
+    _kernel32.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+    _kernel32.GlobalUnlock.restype = wintypes.BOOL
+    _kernel32.GlobalFree.argtypes = [wintypes.HGLOBAL]
+    _kernel32.GlobalFree.restype = wintypes.HGLOBAL
+
+    INPUT_KEYBOARD = 1
+    KEYEVENTF_KEYUP = 0x0002
+    KEYEVENTF_UNICODE = 0x0004
+    CF_UNICODETEXT = 13
+    GMEM_MOVEABLE = 0x0002
+    VK_CONTROL = 0x11
+    VK_SHIFT = 0x10
+    VK_RETURN = 0x0D
+    VK_TAB = 0x09
+    VK_V = 0x56
+    _ULONG_PTR = ctypes.c_size_t
+
+    class _KEYBDINPUT(ctypes.Structure):
+        _fields_ = [
+            ("wVk", wintypes.WORD),
+            ("wScan", wintypes.WORD),
+            ("dwFlags", wintypes.DWORD),
+            ("time", wintypes.DWORD),
+            ("dwExtraInfo", _ULONG_PTR),
+        ]
+
+    class _MOUSEINPUT(ctypes.Structure):
+        _fields_ = [
+            ("dx", wintypes.LONG),
+            ("dy", wintypes.LONG),
+            ("mouseData", wintypes.DWORD),
+            ("dwFlags", wintypes.DWORD),
+            ("time", wintypes.DWORD),
+            ("dwExtraInfo", _ULONG_PTR),
+        ]
+
+    class _HARDWAREINPUT(ctypes.Structure):
+        _fields_ = [
+            ("uMsg", wintypes.DWORD),
+            ("wParamL", wintypes.WORD),
+            ("wParamH", wintypes.WORD),
+        ]
+
+    class _INPUT_UNION(ctypes.Union):
+        _fields_ = [
+            ("ki", _KEYBDINPUT),
+            ("mi", _MOUSEINPUT),
+            ("hi", _HARDWAREINPUT),
+        ]
+
+    class _INPUT(ctypes.Structure):
+        _anonymous_ = ("union",)
+        _fields_ = [
+            ("type", wintypes.DWORD),
+            ("union", _INPUT_UNION),
+        ]
+
+    def _win_send_inputs(events):
+        """Send a list of KEYBDINPUT specs [(vk, scan, flags), ...]."""
+        n = len(events)
+        arr = (_INPUT * n)()
+        for i, (vk, scan, flags) in enumerate(events):
+            arr[i].type = INPUT_KEYBOARD
+            arr[i].ki = _KEYBDINPUT(vk, scan, flags, 0, 0)
+        sent = _user32.SendInput(n, ctypes.byref(arr), ctypes.sizeof(_INPUT))
+        if sent != n:
+            err = ctypes.get_last_error()
+            raise OSError(f"SendInput failed ({sent}/{n}), GetLastError={err}")
+
+    def _win_key_tap(vk, scan=0, flags=0):
+        _win_send_inputs([
+            (vk, scan, flags),
+            (vk, scan, flags | KEYEVENTF_KEYUP),
+        ])
+
+    def _win_unicode_char(ch):
+        code = ord(ch)
+        _win_send_inputs([
+            (0, code, KEYEVENTF_UNICODE),
+            (0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP),
+        ])
+
+    def _win_chord(keys_down_vk):
+        """Press modifier keys + V in order, then release in reverse."""
+        events = [(vk, 0, 0) for vk in keys_down_vk]
+        events += [(vk, 0, KEYEVENTF_KEYUP) for vk in reversed(keys_down_vk)]
+        _win_send_inputs(events)
+
+    def win_set_clipboard(text: str) -> None:
+        """Put Unicode text on the Windows clipboard."""
+        if not _user32.OpenClipboard(None):
+            raise OSError(f"OpenClipboard failed, GetLastError={ctypes.get_last_error()}")
+        try:
+            if not _user32.EmptyClipboard():
+                raise OSError(f"EmptyClipboard failed, GetLastError={ctypes.get_last_error()}")
+            data = text.encode("utf-16-le") + b"\x00\x00"
+            h = _kernel32.GlobalAlloc(GMEM_MOVEABLE, len(data))
+            if not h:
+                raise OSError("GlobalAlloc failed")
+            p = _kernel32.GlobalLock(h)
+            if not p:
+                _kernel32.GlobalFree(h)
+                raise OSError("GlobalLock failed")
+            try:
+                ctypes.memmove(p, data, len(data))
+            finally:
+                _kernel32.GlobalUnlock(h)
+            if not _user32.SetClipboardData(CF_UNICODETEXT, h):
+                _kernel32.GlobalFree(h)
+                raise OSError(f"SetClipboardData failed, GetLastError={ctypes.get_last_error()}")
+            # Ownership of h transfers to the system on success.
+        finally:
+            _user32.CloseClipboard()
+
+    def win_type_text(text: str) -> None:
+        """Type text via SendInput (Unicode). Newlines/tabs become real keys."""
+        for ch in text:
+            if ch in ("\n", "\r"):
+                _win_key_tap(VK_RETURN)
+            elif ch == "\t":
+                _win_key_tap(VK_TAB)
+            else:
+                _win_unicode_char(ch)
+
+    def win_paste_chord(paste_key: str) -> None:
+        if paste_key == "ctrl+shift+v":
+            _win_chord([VK_SHIFT, VK_CONTROL, VK_V])
+        else:
+            _win_chord([VK_CONTROL, VK_V])
+
+    def win_press_enter() -> None:
+        _win_key_tap(VK_RETURN)
+
 
 # Terminal candidates across distributions/desktops.
 # Each entry: (command, template) where template uses {cmd} for the script to run.
@@ -108,8 +271,30 @@ X-GNOME-Autostart-enabled=true
 """
 
 
+WIN_AUTOSTART_TEMPLATE = """\
+@echo off
+title Input from Web
+cd /d "{script_dir}"
+echo Starting Input from Web in 10 seconds... Press Ctrl+C to cancel.
+timeout /t 10 >nul
+if exist "{script_dir}\\run.bat" (
+    call "{script_dir}\\run.bat"
+) else (
+    python "{script_dir}\\input-from-web.py"
+)
+"""
+
+
 def install_autostart():
-    """Create the user autostart .desktop entry. Returns (ok, message)."""
+    """Create the user autostart entry for this OS. Returns (ok, message)."""
+    if IS_WIN:
+        os.makedirs(AUTOSTART_DIR, exist_ok=True)
+        content = WIN_AUTOSTART_TEMPLATE.format(script_dir=SCRIPT_DIR)
+        # Write with CRLF so cmd.exe parses it reliably.
+        with open(AUTOSTART_FILE, "w", encoding="utf-8", newline="\r\n") as f:
+            f.write(content)
+        return True, f"Autostart installed: {AUTOSTART_FILE}"
+
     terminal_exe, arg_style = detect_terminal()
     if not terminal_exe:
         return False, ("No supported terminal emulator found. Install gnome-terminal, "
@@ -141,8 +326,8 @@ DEFAULT_CONFIG = {
         "default_profile: which profile to use when --profile is not specified.",
         "",
         "profiles.<name>.method:",
-        "  'type'      - ydotool type, simulates keystrokes (default).",
-        "  'clipboard' - wl-copy to clipboard, you paste manually.",
+        "  'type'      - simulate keystrokes (ydotool on Linux, SendInput on Windows). Default.",
+        "  'clipboard' - copy to system clipboard (wl-copy on Linux, Win32 clipboard on Windows);",
         "  Can be overridden with --method on the command line.",
         "",
         "profiles.<name>.auto_paste:",
@@ -1605,7 +1790,21 @@ def _is_ascii(text: str) -> bool:
 
 
 def inject_text(text):
-    """Inject text using the chosen method."""
+    """Inject text using the chosen method (platform-aware)."""
+    if IS_WIN:
+        if METHOD == "type" and _is_ascii(text):
+            win_type_text(text)
+        else:
+            win_set_clipboard(text)
+            time.sleep(0.1)
+            # type + non-ASCII → always paste (user expected direct typing).
+            # clipboard method → respect AUTO_PASTE.
+            if AUTO_PASTE or (METHOD == "type" and not _is_ascii(text)):
+                win_paste_chord(PASTE_KEY)
+        if AUTO_PRESS_ENTER:
+            win_press_enter()
+        return
+
     if METHOD == "type" and _is_ascii(text):
         subprocess.run(
             ["ydotool", "type", "--key-delay", "0", "--", text],
@@ -1720,7 +1919,7 @@ def send():
         return {"error": "empty"}, 400
     try:
         inject_text(text)
-    except subprocess.CalledProcessError as e:
+    except (subprocess.CalledProcessError, OSError, subprocess.TimeoutExpired) as e:
         print(f"Injection failed: {e}", file=sys.stderr)
         return {"error": "injection failed"}, 500
     return {"ok": True}
@@ -1814,7 +2013,9 @@ def main():
     global TOKEN, PROFILE, FULL_CONFIG, CURRENT_PROFILE_NAME
     parser = argparse.ArgumentParser(description="Type on your phone, paste on your desktop.")
     parser.add_argument("--method", choices=["clipboard", "type"], default=None,
-                        help="Override profile method. type: ydotool type. clipboard: wl-copy only.")
+                        help="Override profile method. type: simulate keystrokes "
+                             "(ydotool on Linux, SendInput on Windows). "
+                             "clipboard: copy only (wl-copy / Windows clipboard).")
     parser.add_argument("--port", type=int, default=None,
                         help="Override profile port (default: 5123)")
     parser.add_argument("--profile", default=None,

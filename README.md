@@ -1,6 +1,6 @@
 # input-from-web
 
-Use your phone's voice dictation to type into any app on your Ubuntu/Linux desktop.
+Use your phone's voice dictation to type into any app on your Windows or Ubuntu/Linux desktop.
 
 ## Motivation
 
@@ -14,8 +14,9 @@ No app install needed on the phone — just a browser.
 ## How it works
 
 ```
-Phone browser  ──HTTP POST──>  Python (Flask)  ──> ydotool type / wl-copy
-                                    │
+Phone browser  ──HTTP POST──>  Python (Flask)  ──> platform injector
+                                    │                 Linux: ydotool / wl-copy
+                                    │                 Windows: SendInput / clipboard
                               Prints QR code
                               + secret token URL
                               on startup
@@ -33,13 +34,32 @@ Phone browser  ──HTTP POST──>  Python (Flask)  ──> ydotool type / wl
 |---|---|
 | **Python 3 / Flask** | Lightweight HTTP server serving the mobile UI and receiving text |
 | **qrcode** (Python) | Generates a scannable QR code in the terminal at startup |
-| **ydotool** | Simulates keystrokes via `/dev/uinput` (works on Wayland + X11) |
-| **wl-clipboard** (`wl-copy`) | Copies text to the Wayland clipboard (clipboard method) |
-| **ydotoold** | Daemon required by ydotool, needs access to `/dev/uinput` |
+| **ydotool** (Linux) | Simulates keystrokes via `/dev/uinput` (works on Wayland + X11) |
+| **wl-clipboard** (Linux) | Copies text to the Wayland clipboard (clipboard method) |
+| **ydotoold** (Linux) | Daemon required by ydotool, needs access to `/dev/uinput` |
+| **Win32 SendInput / clipboard** (Windows) | Keystroke injection and clipboard via ctypes — no extra native tools |
 
 ## Installation
 
-### From source
+### Windows (from source)
+
+```powershell
+# Requires Python 3.10+ on PATH (python or py launcher)
+git clone <repo-url>
+cd linux-input-from-web
+.\run.bat
+```
+
+`run.bat` creates a venv, installs `flask` + `qrcode`, and starts the server.
+No ydotool / admin rights required — typing and clipboard use the Win32 APIs.
+
+You can also run the script directly once dependencies are installed:
+
+```powershell
+python input-from-web.py
+```
+
+### Linux (from source)
 
 ```bash
 # System dependencies
@@ -54,7 +74,7 @@ venv/bin/pip install flask qrcode
 ./run.sh
 ```
 
-### From .deb package
+### From .deb package (Linux)
 
 ```bash
 sudo apt install ./input-from-web_0.1.0_all.deb
@@ -71,16 +91,20 @@ dpkg-buildpackage -us -uc -b
 
 ## Usage
 
-```
+```bash
+# Linux
 ./run.sh [OPTIONS]
+
+# Windows
+.\run.bat [OPTIONS]
 ```
 
 ### Command-line flags
 
 | Flag | Description |
 |---|---|
-| `--method type` | Simulate keystrokes via ydotool (default) |
-| `--method clipboard` | Copy to clipboard via wl-copy, you paste manually |
+| `--method type` | Simulate keystrokes (ydotool / SendInput). Default |
+| `--method clipboard` | Copy to system clipboard, you paste manually |
 | `--port PORT` | TCP port to listen on (default: 5123) |
 | `--profile NAME` | Use a named profile from the config file |
 | `--permanent-link` | Reuse a stored token across sessions (see below) |
@@ -94,6 +118,8 @@ dpkg-buildpackage -us -uc -b
 ./run.sh --port 8080              # listen on port 8080
 ./run.sh --profile work           # use the "work" profile from config
 ```
+
+Windows equivalents: `.\run.bat --method clipboard`, `.\run.bat --port 8080`, etc.
 
 ### In-app settings
 
@@ -262,8 +288,28 @@ A red warning is printed at startup. Only do this on a network you fully control
 
 ## Requirements
 
+### Windows
+- Windows 10/11
+- Python 3.10+
+- Phone and computer on the same local network
+
+### Linux
 - Ubuntu 24.04+ (or any Linux with Wayland)
 - Python 3.12+
 - ydotool + ydotoold (for keystroke injection)
 - wl-clipboard (for clipboard method)
 - Phone and computer on the same local network
+
+## Windows notes
+
+- **Direct typing**: ASCII text is injected with `SendInput` (Unicode). Non-ASCII
+  (e.g. Chinese) falls back to clipboard + Ctrl+V, matching the Linux fallback.
+- **Clipboard mode**: text is copied with the Win32 clipboard API; optional
+  auto-paste simulates Ctrl+V or Ctrl+Shift+V.
+- **Auto-start**: installs a `.bat` into
+  `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. It opens a console
+  with a 10-second countdown (so you can cancel), then starts the server with QR code.
+- Firewall: allow Python / the chosen port on your private network the first time
+  Windows Defender Firewall prompts.
+- Some elevated (admin) apps ignore SendInput from a non-elevated server. If typing
+  into an admin window fails, run the server elevated too, or use clipboard mode.
