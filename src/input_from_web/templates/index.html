@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="__LANG__">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta name="theme-color" content="#6750A4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<!-- Apply the saved theme before first paint to avoid a flash of the wrong palette. -->
+<script src="/static/theme-init.js"></script>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>__TITLE__</title>
+
+<!-- Material 3 Expressive (@m3e/web) Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet">
+
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div id="theme-host" style="display:contents">
+<m3e-theme id="app-theme" variant="tonal-spot" color="#6750A4" scheme="auto" style="display:contents">
+<div class="app-container">
+  <div class="btn-row">
+    <m3e-button id="btn" variant="filled" size="large">
+      <m3e-icon slot="icon" name="send" variant="outlined"></m3e-icon><span class="btn-label">SEND</span>
+    </m3e-button>
+    <m3e-icon-button id="clear-btn" variant="standard">
+      <m3e-icon name="delete" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
+    <m3e-icon-button id="settings-btn" variant="standard" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-sheet">
+      <m3e-icon name="tune" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
+  </div>
+
+  <div class="input-field">
+    <div class="field-box">
+      <label class="flt-label" for="txt">__LABEL_TYPE_HERE__</label>
+      <textarea id="txt" rows="4" autofocus></textarea>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <m3e-icon-button id="nav-left" variant="standard" disabled>
+      <m3e-icon name="chevron_left" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
+    <div class="nav-center">
+      <div class="nav-mid">
+        <div class="nav-info" id="nav-info"></div>
+      </div>
+    </div>
+    <m3e-icon-button id="nav-right" variant="standard" disabled>
+      <m3e-icon name="chevron_right" variant="outlined"></m3e-icon>
+    </m3e-icon-button>
+  </div>
+</div>
+
+<!-- Settings live in a modal bottom sheet (drag handle, swipe to dismiss,
+     fit-to-content height) instead of occupying rows in the main layout. -->
+<m3e-bottom-sheet id="settings-sheet" modal handle hideable detents="fit" aria-labelledby="settings-sheet-header">
+  <div slot="header" id="settings-sheet-header" class="sheet-header" data-i18n="settings_title">设置</div>
+  <div class="sheet-body">
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="autostart_label">开机自启（登录后自动弹终端显示二维码）</span>
+      <m3e-switch id="autostart-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="method_label">剪贴板模式（复制粘贴，而非直接键入）</span>
+      <m3e-switch id="method-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="auto_paste_label">复制后自动粘贴（剪贴板模式下生效）</span>
+      <m3e-switch id="auto-paste-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="paste_key_label">粘贴快捷键使用 Ctrl+Shift+V（默认 Ctrl+V）</span>
+      <m3e-switch id="paste-key-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="enter_label">发送后自动按 Enter</span>
+      <m3e-switch id="enter-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="voice_label">语音指令：说 “send” 自动发送</span>
+      <m3e-switch id="voice-switch"></m3e-switch>
+    </div>
+
+    <div class="autostart-row">
+      <span class="autostart-label" data-i18n="token_label">启用安全令牌（URL 携带密钥）</span>
+      <m3e-switch id="token-switch"></m3e-switch>
+    </div>
+
+    <div class="lang-group-row">
+      <span class="autostart-label" data-i18n="lang_switch_label">界面语言</span>
+      <m3e-button-group variant="connected" id="lang-group">
+        <m3e-button variant="tonal" toggle data-lang="zh">中文</m3e-button>
+        <m3e-button variant="tonal" toggle data-lang="en">English</m3e-button>
+      </m3e-button-group>
+    </div>
+
+    <div class="theme-group-row">
+      <span class="autostart-label" data-i18n="theme_switch_label">主题</span>
+      <m3e-button-group variant="connected" id="theme-group">
+        <m3e-button variant="tonal" toggle data-theme="light" data-i18n="theme_light">浅色</m3e-button>
+        <m3e-button variant="tonal" toggle data-theme="dark" data-i18n="theme_dark">深色</m3e-button>
+        <m3e-button variant="tonal" toggle data-theme="auto" data-i18n="theme_auto">自动</m3e-button>
+      </m3e-button-group>
+    </div>
+
+    <div class="color-row">
+      <span class="autostart-label" data-i18n="theme_color_label">主题色</span>
+      <div class="swatch-grid" id="theme-color-grid"></div>
+      <m3e-button id="theme-material-btn" variant="tonal" toggle data-i18n="theme_material">Material 系统配色</m3e-button>
+    </div>
+  </div>
+</m3e-bottom-sheet>
+
+<!-- Material 3 Expressive (@m3e/web) -->
+<!-- m3e builds on Lit + tslib + its own core; the dist files use bare specifiers,
+     so we publish an import map before the module script loads. -->
+<script type="importmap">
+{
+  "imports": {
+    "tslib": "https://cdn.jsdelivr.net/npm/tslib@2.8.1/+esm",
+    "lit": "https://cdn.jsdelivr.net/npm/lit@3.3.0/+esm",
+    "lit/": "https://cdn.jsdelivr.net/npm/lit@3.3.0/",
+    "lit-html": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/+esm",
+    "lit-html/": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/",
+    "lit-html/directive.js": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/directive.js",
+    "lit-html/directives/if-defined.js": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/directives/if-defined.js",
+    "lit-html/directives/class-map.js": "https://cdn.jsdelivr.net/npm/lit-html@3.3.0/directives/class-map.js",
+    "@lit/reactive-element": "https://cdn.jsdelivr.net/npm/@lit/reactive-element@2.0.4/+esm",
+    "@lit/reactive-element/": "https://cdn.jsdelivr.net/npm/@lit/reactive-element@2.0.4/",
+    "@m3e/web/core": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/core.min.js",
+    "@m3e/web/core/a11y": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/core-a11y.min.js",
+    "@m3e/web/core/bidi": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/core-bidi.min.js",
+    "@m3e/web/button": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/button.min.js",
+    "@m3e/web/icon": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/icon.min.js",
+    "@m3e/web/icon-button": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/icon-button.min.js",
+    "@m3e/web/switch": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/switch.min.js",
+    "@m3e/web/snackbar": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/snackbar.min.js",
+    "@m3e/web/bottom-sheet": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/bottom-sheet.min.js",
+    "@m3e/web/button-group": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/button-group.min.js",
+    "@m3e/web/theme": "https://cdn.jsdelivr.net/npm/@m3e/web@2.7.9/dist/theme.min.js"
+  }
+}
+</script>
+<!-- One ES module: load m3e via import map, then wait until every custom element is upgraded
+     before touching the DOM. This avoids race conditions where page logic runs
+     against un-upgraded <m3e-*> elements. -->
+<script type="application/json" id="app-config">__CONFIG__</script>
+<script type="module" src="/static/app.js"></script>
+</m3e-theme>
+</div>
+</body>
+</html>
+

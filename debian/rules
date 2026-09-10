@@ -4,6 +4,7 @@
 	dh $@
 
 override_dh_auto_install:
-	install -D -m 0755 input-from-web.py debian/input-from-web/usr/share/input-from-web/input-from-web.py
+	install -D -m 0644 pyproject.toml debian/input-from-web/usr/share/input-from-web/pyproject.toml
+	cp -a src/input_from_web debian/input-from-web/usr/share/input-from-web/
 	install -D -m 0644 icon.svg debian/input-from-web/usr/share/input-from-web/icon.svg
 	install -D -m 0755 debian/input-from-web.wrapper debian/input-from-web/usr/bin/input-from-web

@@ -1,0 +1,395 @@
+/* M3 baseline color schemes (seed #6750A4) in the official --md-sys-color-*
+     namespace that @m3e/web DesignTokens consume. Components resolve
+     var(--md-sys-color-<role>, <light fallback>) so both schemes must be defined. */
+  :root {
+    --md-sys-color-primary: #6750A4;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-primary-container: #EADDFF;
+    --md-sys-color-on-primary-container: #21005D;
+    --md-sys-color-primary-fixed: #EADDFF;
+    --md-sys-color-primary-fixed-dim: #D0BCFF;
+    --md-sys-color-on-primary-fixed: #21005D;
+    --md-sys-color-on-primary-fixed-variant: #4F378B;
+    --md-sys-color-secondary: #625B71;
+    --md-sys-color-on-secondary: #FFFFFF;
+    --md-sys-color-secondary-container: #E8DEF8;
+    --md-sys-color-on-secondary-container: #1D192B;
+    --md-sys-color-secondary-fixed: #E8DEF8;
+    --md-sys-color-secondary-fixed-dim: #CCC2DC;
+    --md-sys-color-on-secondary-fixed: #1D192B;
+    --md-sys-color-on-secondary-fixed-variant: #4A4458;
+    --md-sys-color-tertiary: #7D5260;
+    --md-sys-color-on-tertiary: #FFFFFF;
+    --md-sys-color-tertiary-container: #FFD8E4;
+    --md-sys-color-on-tertiary-container: #31111D;
+    --md-sys-color-tertiary-fixed: #FFD8E4;
+    --md-sys-color-tertiary-fixed-dim: #EFB8C8;
+    --md-sys-color-on-tertiary-fixed: #31111D;
+    --md-sys-color-on-tertiary-fixed-variant: #633B48;
+    --md-sys-color-error: #B3261E;
+    --md-sys-color-on-error: #FFFFFF;
+    --md-sys-color-error-container: #F9DEDC;
+    --md-sys-color-on-error-container: #410E0B;
+    --md-sys-color-surface: #FEF7FF;
+    --md-sys-color-on-surface: #1D1B20;
+    --md-sys-color-surface-variant: #E7E0EC;
+    --md-sys-color-on-surface-variant: #49454F;
+    --md-sys-color-surface-dim: #DED8E1;
+    --md-sys-color-surface-bright: #FEF7FF;
+    --md-sys-color-surface-container-lowest: #FFFFFF;
+    --md-sys-color-surface-container-low: #F7F2FA;
+    --md-sys-color-surface-container: #F3EDF7;
+    --md-sys-color-surface-container-high: #ECE6F0;
+    --md-sys-color-surface-container-highest: #E6E0E9;
+    --md-sys-color-outline: #79747E;
+    --md-sys-color-outline-variant: #CAC4D0;
+    --md-sys-color-inverse-surface: #313033;
+    --md-sys-color-inverse-on-surface: #F4EFF4;
+    --md-sys-color-inverse-primary: #D0BCFF;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-shadow: #000000;
+  }
+  /* DARK palette.
+     - Auto (no explicit choice): follows the OS via prefers-color-scheme,
+       unless the user forced light.
+     - Forced dark: applies regardless of the OS setting.
+     The light palette above (:root) is the fallback used for forced light. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --md-sys-color-primary: #D0BCFF;
+      --md-sys-color-on-primary: #381E72;
+      --md-sys-color-primary-container: #4F378B;
+      --md-sys-color-on-primary-container: #EADDFF;
+      --md-sys-color-primary-fixed: #EADDFF;
+      --md-sys-color-primary-fixed-dim: #D0BCFF;
+      --md-sys-color-on-primary-fixed: #21005D;
+      --md-sys-color-on-primary-fixed-variant: #4F378B;
+      --md-sys-color-secondary: #CCC2DC;
+      --md-sys-color-on-secondary: #332D41;
+      --md-sys-color-secondary-container: #4A4458;
+      --md-sys-color-on-secondary-container: #E8DEF8;
+      --md-sys-color-secondary-fixed: #E8DEF8;
+      --md-sys-color-secondary-fixed-dim: #CCC2DC;
+      --md-sys-color-on-secondary-fixed: #1D192B;
+      --md-sys-color-on-secondary-fixed-variant: #4A4458;
+      --md-sys-color-tertiary: #EFB8C8;
+      --md-sys-color-on-tertiary: #492532;
+      --md-sys-color-tertiary-container: #633B48;
+      --md-sys-color-on-tertiary-container: #FFD8E4;
+      --md-sys-color-tertiary-fixed: #FFD8E4;
+      --md-sys-color-tertiary-fixed-dim: #EFB8C8;
+      --md-sys-color-on-tertiary-fixed: #31111D;
+      --md-sys-color-on-tertiary-fixed-variant: #633B48;
+      --md-sys-color-error: #F2B8B5;
+      --md-sys-color-on-error: #601410;
+      --md-sys-color-error-container: #8C1D18;
+      --md-sys-color-on-error-container: #F9DEDC;
+      --md-sys-color-surface: #141218;
+      --md-sys-color-on-surface: #E6E0E9;
+      --md-sys-color-surface-variant: #49454F;
+      --md-sys-color-on-surface-variant: #CAC4D0;
+      --md-sys-color-surface-dim: #141218;
+      --md-sys-color-surface-bright: #3B383E;
+      --md-sys-color-surface-container-lowest: #0F0D13;
+      --md-sys-color-surface-container-low: #1D1B20;
+      --md-sys-color-surface-container: #211F26;
+      --md-sys-color-surface-container-high: #2B2930;
+      --md-sys-color-surface-container-highest: #36343B;
+      --md-sys-color-outline: #938F99;
+      --md-sys-color-outline-variant: #49454F;
+      --md-sys-color-inverse-surface: #E6E0E9;
+      --md-sys-color-inverse-on-surface: #313033;
+      --md-sys-color-inverse-primary: #4F378B;
+      --md-sys-color-scrim: #000000;
+      --md-sys-color-shadow: #000000;
+    }
+  }
+  :root[data-theme="dark"] {
+    --md-sys-color-primary: #D0BCFF;
+    --md-sys-color-on-primary: #381E72;
+    --md-sys-color-primary-container: #4F378B;
+    --md-sys-color-on-primary-container: #EADDFF;
+    --md-sys-color-primary-fixed: #EADDFF;
+    --md-sys-color-primary-fixed-dim: #D0BCFF;
+    --md-sys-color-on-primary-fixed: #21005D;
+    --md-sys-color-on-primary-fixed-variant: #4F378B;
+    --md-sys-color-secondary: #CCC2DC;
+    --md-sys-color-on-secondary: #332D41;
+    --md-sys-color-secondary-container: #4A4458;
+    --md-sys-color-on-secondary-container: #E8DEF8;
+    --md-sys-color-secondary-fixed: #E8DEF8;
+    --md-sys-color-secondary-fixed-dim: #CCC2DC;
+    --md-sys-color-on-secondary-fixed: #1D192B;
+    --md-sys-color-on-secondary-fixed-variant: #4A4458;
+    --md-sys-color-tertiary: #EFB8C8;
+    --md-sys-color-on-tertiary: #492532;
+    --md-sys-color-tertiary-container: #633B48;
+    --md-sys-color-on-tertiary-container: #FFD8E4;
+    --md-sys-color-tertiary-fixed: #FFD8E4;
+    --md-sys-color-tertiary-fixed-dim: #EFB8C8;
+    --md-sys-color-on-tertiary-fixed: #31111D;
+    --md-sys-color-on-tertiary-fixed-variant: #633B48;
+    --md-sys-color-error: #F2B8B5;
+    --md-sys-color-on-error: #601410;
+    --md-sys-color-error-container: #8C1D18;
+    --md-sys-color-on-error-container: #F9DEDC;
+    --md-sys-color-surface: #141218;
+    --md-sys-color-on-surface: #E6E0E9;
+    --md-sys-color-surface-variant: #49454F;
+    --md-sys-color-on-surface-variant: #CAC4D0;
+    --md-sys-color-surface-dim: #141218;
+    --md-sys-color-surface-bright: #3B383E;
+    --md-sys-color-surface-container-lowest: #0F0D13;
+    --md-sys-color-surface-container-low: #1D1B20;
+    --md-sys-color-surface-container: #211F26;
+    --md-sys-color-surface-container-high: #2B2930;
+    --md-sys-color-surface-container-highest: #36343B;
+    --md-sys-color-outline: #938F99;
+    --md-sys-color-outline-variant: #49454F;
+    --md-sys-color-inverse-surface: #E6E0E9;
+    --md-sys-color-inverse-on-surface: #313033;
+    --md-sys-color-inverse-primary: #4F378B;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-shadow: #000000;
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    /* 禁用移动端点击时的蓝色高亮 */
+    -webkit-tap-highlight-color: transparent;
+    /* 禁用长按弹出的系统菜单（不影响输入框内的文字编辑） */
+    -webkit-touch-callout: none;
+    /* Keep the app fixed to the viewport: when the mobile keyboard opens the
+       browser must not pan the page; the flexible input area shrinks instead. */
+    overflow: hidden;
+    overscroll-behavior: none;
+    background-color: var(--md-sys-color-surface-container, #f3edf7);
+    color: var(--md-sys-color-on-surface, #1d1b20);
+    transition: background-color 0.3s, color 0.3s;
+  }
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    /* --app-height tracks visualViewport.height (set from JS) so the layout
+       fits above the keyboard on both Android (resizes-content) and iOS. */
+    height: var(--app-height, 100dvh);
+    padding: 16px;
+    box-sizing: border-box;
+    gap: 12px;
+  }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+    align-items: center;
+  }
+  .btn-row m3e-button {
+    flex: 1;
+  }
+  /* Expressive send button: amplify the built-in press shape-morph so the
+     pill visibly squishes (spring physics come from the component). */
+  .btn-row m3e-button#btn {
+    --m3e-button-shape-pressed-morph: 16px;
+  }
+  /* SEND 按钮使用组件默认字体显示文字（不指定特殊图标字体，避免连字问题）。 */
+  /* Success feedback: the icon flies out of the clipped wrapper and the new
+     one flies back in. */
+  @keyframes btn-icon-out {
+    to { transform: translateX(130%); opacity: 0; }
+  }
+  @keyframes btn-icon-in {
+    from { transform: translateX(-130%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  #btn > m3e-icon.fly-out { animation: btn-icon-out 0.18s ease-in forwards; }
+  #btn > m3e-icon.fly-in { animation: btn-icon-in 0.26s cubic-bezier(0.2, 0, 0, 1); }
+  @media (prefers-reduced-motion: reduce) {
+    #btn > m3e-icon.fly-out, #btn > m3e-icon.fly-in { animation: none; }
+  }
+  .input-field {
+    flex: 1;
+    display: flex;
+    min-height: 96px;
+    position: relative;
+    overflow: visible;
+  }
+  /* Hand-styled M3 outlined field: m3e-form-field's floating label does not
+     track multiline textareas, so the box, border notch and textarea are
+     styled here directly. The height chain stays unbroken so the field
+     shrinks correctly when the mobile keyboard opens. */
+  .field-box {
+    position: relative;
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    border: 1px solid var(--md-sys-color-outline, #79747e);
+    border-radius: 12px;
+    transition: border-color 0.2s;
+  }
+  .field-box:focus-within {
+    border-color: var(--md-sys-color-primary, #6750a4);
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-primary, #6750a4);
+  }
+  .field-box .flt-label {
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    max-width: calc(100% - 28px);
+    padding: 0 6px;
+    background: var(--md-sys-color-surface-container, #f3edf7);
+    color: var(--md-sys-color-on-surface-variant, #49454f);
+    font-size: 12px;
+    line-height: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .field-box:focus-within .flt-label {
+    color: var(--md-sys-color-primary, #6750a4);
+  }
+  .field-box textarea {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface, #1d1b20);
+    caret-color: var(--md-sys-color-primary, #6750a4);
+    padding: 12px 16px;
+    /* 表单控件默认不继承 font-family，会回退到浏览器内置字体；
+       这里用 inherit 让它跟随页面（系统默认），而不指定具体字体。 */
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.5;
+    box-sizing: border-box;
+    /* 输入框内允许正常的文字选中/编辑（覆盖全局 touch-callout:none） */
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+  .field-box textarea::placeholder {
+    color: var(--md-sys-color-on-surface-variant, #49454f);
+    opacity: 1;
+  }
+  .nav-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 8px 0;
+  }
+  .nav-center {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .nav-mid {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav-info {
+    font-size: 0.9rem;
+    color: var(--md-sys-color-on-surface-variant, #49454f);
+    line-height: 1;
+    min-width: 40px;
+    text-align: center;
+  }
+  m3e-button[disabled], m3e-icon-button[disabled] {
+    opacity: 0.38;
+    pointer-events: none;
+  }
+  .autostart-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .autostart-label {
+    font-size: 14px;
+    color: var(--md-sys-color-on-surface, #444);
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  /* Language selector: label on top, full-width connected button group below. */
+  .lang-group-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 4px 0;
+  }
+  .lang-group-row m3e-button-group {
+    width: 100%;
+  }
+  /* Force the language/theme buttons to equal width (ignore content length). */
+  .lang-group-row m3e-button-group m3e-button,
+  .theme-group-row m3e-button-group m3e-button {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+  }
+  /* Theme selector: same layout as the language selector. */
+  .theme-group-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 4px 0;
+  }
+  .theme-group-row m3e-button-group {
+    width: 100%;
+  }
+  /* Theme color: label, a grid of preset swatches, and a "Material" reset button. */
+  .color-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+    padding: 4px 0;
+  }
+  .swatch-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .swatch {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+    transition: transform 0.12s ease;
+  }
+  .swatch:hover { transform: scale(1.08); }
+  .swatch.selected {
+    outline: 3px solid var(--md-sys-color-primary, #6750A4);
+    outline-offset: 3px;
+  }
+  #theme-material-btn { align-self: flex-start; }
+  /* Bottom sheet content */
+  .sheet-header {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface, #1d1b20);
+    padding: 4px 16px 0;
+  }
+  .sheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 16px 20px;
+  }

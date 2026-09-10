@@ -53,10 +53,24 @@ cd linux-input-from-web
 `run.bat` creates a venv, installs `flask` + `qrcode`, and starts the server.
 No ydotool / admin rights required — typing and clipboard use the Win32 APIs.
 
-You can also run the script directly once dependencies are installed:
+You can also run the package entry once dependencies are installed:
 
 ```powershell
+$env:PYTHONPATH = "$PWD\src"
+python -m input_from_web
+# or the compatibility shim
 python input-from-web.py
+```
+
+### Project layout
+
+```
+input-from-web.py          # thin compatibility shim
+src/input_from_web/        # Python package (CLI, Flask, config, inject)
+  templates/index.html     # phone UI shell
+  static/                  # app.css, app.js, theme-init.js, icon.svg
+run.bat / run.sh           # venv bootstrap + python -m input_from_web
+pyproject.toml
 ```
 
 ### Linux (from source)
@@ -72,6 +86,8 @@ venv/bin/pip install flask qrcode
 
 # Run
 ./run.sh
+# equivalent:
+# PYTHONPATH=src venv/bin/python -m input_from_web
 ```
 
 ### From .deb package (Linux)

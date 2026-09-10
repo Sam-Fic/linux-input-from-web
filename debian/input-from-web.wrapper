@@ -9,4 +9,5 @@ if ! pgrep -x ydotoold > /dev/null 2>&1; then
     echo "ydotoold started."
 fi
 
-exec /usr/bin/python3 /usr/share/input-from-web/input-from-web.py "$@"
+export PYTHONPATH="/usr/share/input-from-web${PYTHONPATH:+:$PYTHONPATH}"
+exec /usr/bin/python3 -m input_from_web "$@"

@@ -23,4 +23,5 @@ if ! "$DIR/venv/bin/python" -c "import flask, qrcode" >/dev/null 2>&1; then
     "$DIR/venv/bin/pip" install --quiet flask qrcode
 fi
 
-exec "$DIR/venv/bin/python" "$DIR/input-from-web.py" "$@"
+export PYTHONPATH="$DIR/src${PYTHONPATH:+:$PYTHONPATH}"
+exec "$DIR/venv/bin/python" -m input_from_web "$@"

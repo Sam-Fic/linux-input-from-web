@@ -36,5 +36,6 @@ if errorlevel 1 (
     )
 )
 
-"%~dp0venv\Scripts\python.exe" "%~dp0input-from-web.py" %*
+set "PYTHONPATH=%~dp0src"
+"%~dp0venv\Scripts\python.exe" -m input_from_web %*
 exit /b %errorlevel%
