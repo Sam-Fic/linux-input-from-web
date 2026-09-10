@@ -8,7 +8,6 @@ IS_WIN = sys.platform == "win32"
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(PACKAGE_DIR, "static")
 TEMPLATES_DIR = os.path.join(PACKAGE_DIR, "templates")
-ICON_PATH = os.path.join(STATIC_DIR, "icon.svg")
 
 CONFIG_PATH = os.path.expanduser("~/.input-from-web-conf.json")
 

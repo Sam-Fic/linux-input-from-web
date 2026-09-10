@@ -1,7 +1,7 @@
 """Mutable runtime settings shared by CLI bootstrap and Flask routes."""
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 
 @dataclass
@@ -24,8 +24,3 @@ class Runtime:
         ):
             self.full_config["profiles"][self.current_profile_name] = self.profile
             save_config(self.full_config)
-
-
-def as_client_config(profile: dict[str, Any]) -> dict[str, Any]:
-    """Profile subset injected into the phone UI as CONFIG."""
-    return profile
