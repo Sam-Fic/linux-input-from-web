@@ -190,13 +190,21 @@ if IS_WIN:
 
     def win_type_text(text: str) -> None:
         """Type text via SendInput (Unicode). Newlines/tabs become real keys."""
-        for ch in text:
+        i = 0
+        n = len(text)
+        while i < n:
+            ch = text[i]
+            if ch == "\r" and i + 1 < n and text[i + 1] == "\n":
+                _win_key_tap(VK_RETURN)
+                i += 2
+                continue
             if ch in ("\n", "\r"):
                 _win_key_tap(VK_RETURN)
             elif ch == "\t":
                 _win_key_tap(VK_TAB)
             else:
                 _win_unicode_char(ch)
+            i += 1
 
     def win_paste_chord(paste_key: str) -> None:
         if paste_key == "ctrl+shift+v":
@@ -1789,21 +1797,42 @@ def _is_ascii(text: str) -> bool:
     return True
 
 
+def _strip_trailing_newlines(text: str) -> str:
+    """Avoid double-Enter when auto-Enter is on and text already ends with newlines."""
+    return text.rstrip("\r\n")
+
+
 def inject_text(text):
     """Inject text using the chosen method (platform-aware)."""
     if IS_WIN:
-        if METHOD == "type" and _is_ascii(text):
-            win_type_text(text)
+        # Chat apps treat Enter as send: if the payload already ends with \n,
+        # typing/pasting it would submit, then auto-Enter would submit again.
+        payload = _strip_trailing_newlines(text) if AUTO_PRESS_ENTER else text
+        if not payload and text:
+            payload = text  # text was only newlines; keep original behavior
+
+        if METHOD == "type" and _is_ascii(payload):
+            win_type_text(payload)
         else:
-            win_set_clipboard(text)
+            win_set_clipboard(payload)
             time.sleep(0.1)
             # type + non-ASCII → always paste (user expected direct typing).
             # clipboard method → respect AUTO_PASTE.
-            if AUTO_PASTE or (METHOD == "type" and not _is_ascii(text)):
+            if AUTO_PASTE or (METHOD == "type" and not _is_ascii(payload)):
                 win_paste_chord(PASTE_KEY)
+                # WM_PASTE is async in many apps. Enter immediately after Ctrl+V
+                # can be processed BEFORE the paste lands (empty send, then text
+                # appears), which looks like "Enter → paste → Enter".
+                time.sleep(0.25)
         if AUTO_PRESS_ENTER:
+            if METHOD == "type" and _is_ascii(payload):
+                time.sleep(0.05)
             win_press_enter()
         return
+
+    # Linux path: same trailing-newline guard for auto-Enter.
+    if AUTO_PRESS_ENTER:
+        text = _strip_trailing_newlines(text)
 
     if METHOD == "type" and _is_ascii(text):
         subprocess.run(
@@ -1839,6 +1868,7 @@ def inject_text(text):
                 check=True,
                 timeout=5,
             )
+            time.sleep(0.25)
 
     # Independently of auto_paste: optionally press Enter after the text
     # has been typed / pasted. Useful for chat boxes, messengers, shells.
