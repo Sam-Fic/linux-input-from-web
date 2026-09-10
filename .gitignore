@@ -1,17 +1,65 @@
+# Virtual environments
 venv/
+.venv/
+env/
+
+# Python bytecode / caches
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Packaging / build outputs
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
 
 # Debian packaging build artifacts (managed by debhelper)
 debian/.debhelper/
 debian/files
 debian/*.substvars
 debian/*.buildinfo
+debian/*.build
 debian/debhelper-build-stamp
 debian/input-from-web/
+debian/input-from-web.debhelper.log
+debian/input-from-web.debhelper
+
+# Local secrets / env files
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs and temp
+*.log
+*.tmp
+*.temp
+~$*
+*.swp
+*~
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.code-workspace
 
 # Browser GUI test evidence (session artifacts)
 gui-test-screenshots/
 
 # Agent workspace data (CodeBuddy memory / working files)
 .codebuddy/
+
+# Local worktrees for agents
+.worktrees/
