@@ -49,7 +49,7 @@ Phone browser  ──HTTP POST──>  Python (Flask)  ──> platform injector
 ```powershell
 # Requires Python 3.10+ on PATH (python or py launcher)
 git clone <repo-url>
-cd linux-input-from-web
+cd input-from-web
 .\run.bat
 ```
 
@@ -86,7 +86,7 @@ pyproject.toml
 sudo apt install ydotool wl-clipboard python3.12-venv
 
 # Clone and set up
-git clone <repo-url> && cd linux-input-from-web
+git clone <repo-url> && cd input-from-web
 python3 -m venv venv
 venv/bin/pip install flask qrcode
 
@@ -115,11 +115,11 @@ dpkg-buildpackage -us -uc -b
 
 ```bash
 # Requires Python 3.10+ (python.org or Homebrew)
-git clone <repo-url> && cd linux-input-from-web
+git clone <repo-url> && cd input-from-web
 python3 -m venv venv
 venv/bin/pip install flask qrcode
 
-# Run (a Terminal window shows the QR code)
+# Run (the QR code is printed in the current terminal)
 ./run.sh
 ```
 
@@ -145,12 +145,14 @@ Gatekeeper steps.
 
 | Flag | Description |
 |---|---|
-| `--method type` | Simulate keystrokes (ydotool / SendInput). Default |
+| `--method type` | Simulate keystrokes (AppleScript on macOS, ydotool on Linux, SendInput on Windows). Default |
 | `--method clipboard` | Copy to system clipboard, you paste manually |
 | `--port PORT` | TCP port to listen on (default: 5123) |
 | `--profile NAME` | Use a named profile from the config file |
 | `--permanent-link` | Reuse a stored token across sessions (see below) |
 | `--permanent-link-refresh` | Replace the stored permanent token with a new one |
+| `--install-autostart` | Install a user autostart entry (LaunchAgent on macOS, Startup folder on Windows, .desktop on Linux) |
+| `--uninstall-autostart` | Remove the user autostart entry if present |
 
 ### Examples
 
@@ -181,7 +183,9 @@ a `default` profile. You can add more profiles and switch between them.
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `method` | `"type"` or `"clipboard"` | `"type"` | Input injection method. Overridden by `--method` |
-| `auto_paste` | boolean | `false` | After clipboard copy, simulate Ctrl+V via ydotool. Only applies to `clipboard` method. Useful for GUI apps, not terminals |
+| `auto_paste` | boolean | `false` | After clipboard copy, simulate a paste keystroke (Ctrl+V on Windows/Linux, Cmd+V on macOS). Only applies to `clipboard` method. Useful for GUI apps, not terminals |
+| `paste_key` | `"ctrl+v"` or `"ctrl+shift+v"` | `"ctrl+v"` | Paste shortcut simulated when `auto_paste` is on (Ctrl+Shift+V on Windows/Linux, Cmd+Shift+V on macOS). Only applies to `clipboard` method |
+| `auto_press_enter` | boolean | `false` | After injection, press Enter to submit (chat boxes, messengers, shells) |
 | `port` | integer | `5123` | TCP port. Overridden by `--port` |
 | `use_security_token` | boolean | `true` | Require secret token in URL. **Only disable on trusted networks** |
 | `voice_send` | object | (see below) | Voice command auto-trigger settings |
@@ -193,10 +197,10 @@ a `default` profile. You can add more profiles and switch between them.
 |---|---|---|---|
 | `enabled` | boolean | `true` | Enable voice command detection |
 | `delay_seconds` | number | `1.5` | Seconds to wait after last edit before triggering |
-| `send_words` | string[] | `["send"]` | Words that trigger auto-send when typed last |
-| `clear_words` | string[] | `["clear"]` | Words that trigger auto-clear when typed last |
+| `send_words` | string[] | `["send", "发送"]` | Words that trigger auto-send when typed last |
+| `clear_words` | string[] | `["clear", "清除"]` | Words that trigger auto-clear when typed last |
 
-When dictating, say "send" at the end of your text. If no further edits happen for
+When dictating, say "send" or "发送" at the end of your text. If no further edits happen for
 1.5 seconds, the text (minus the command word) is automatically sent.
 
 ### substitutions
@@ -231,8 +235,8 @@ Default substitutions:
       "voice_send": {
         "enabled": true,
         "delay_seconds": 1.5,
-        "send_words": ["send"],
-        "clear_words": ["clear"]
+        "send_words": ["send", "发送"],
+        "clear_words": ["clear", "清除"]
       },
       "substitutions": {
         "full stop": ".",
@@ -336,7 +340,7 @@ A red warning is printed at startup. Only do this on a network you fully control
 - Phone and computer on the same local network
 
 ### Linux
-- Ubuntu 24.04+ (or any Linux with Wayland)
+- Ubuntu 24.04+ (or any Linux with ydotool; also works on X11)
 - Python 3.12+
 - ydotool + ydotoold (for keystroke injection)
 - wl-clipboard (for clipboard method)
@@ -361,6 +365,8 @@ A red warning is printed at startup. Only do this on a network you fully control
   without any permission grant.
 - **Non-ASCII fallback**: like Windows/Linux, non-ASCII text (e.g. Chinese) is
   injected via clipboard + Cmd+V.
+- **Auto-paste shortcut**: with `paste_key: "ctrl+shift+v"`, auto-paste uses
+  Cmd+Shift+V (terminals, code editors).
 - **Gatekeeper**: CI builds are signed ad-hoc (no Developer ID), so macOS may
   quarantine a downloaded build — right-click the app in Finder → **Open**, or
   run `xattr -dr com.apple.quarantine "/Applications/Input from Web.app"`.
