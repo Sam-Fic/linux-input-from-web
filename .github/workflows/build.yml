@@ -112,7 +112,7 @@ jobs:
           find "$APP/Contents/Resources" -name index.html -o -name app.js | head -10
           test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/templates/index.html"
           test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/static/app.js"
-          test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/_version.py"
+          test -f "$APP/Contents/Resources/lib/$PY/input_from_web/_version.py"
       - name: Package .app as DMG
         run: |
           hdiutil create -volname "Input from Web" \
