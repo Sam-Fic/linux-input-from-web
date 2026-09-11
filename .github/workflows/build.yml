@@ -62,11 +62,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macos-13 (Intel x86_64) has very long public-repo queues; best effort.
-          - { os: macos-13, arch: x86_64, best_effort: true }
-          - { os: macos-14, arch: arm64, best_effort: false }
+          # macos-13 (Intel x86_64) has very long public-repo queues, so it is
+          # only built when the workflow is manually dispatched.
+          - { os: macos-13, arch: x86_64, manual_only: true }
+          - { os: macos-14, arch: arm64, manual_only: false }
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.best_effort }}
+    continue-on-error: ${{ matrix.manual_only }}
+    if: ${{ !matrix.manual_only || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
