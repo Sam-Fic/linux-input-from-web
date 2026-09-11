@@ -1,6 +1,6 @@
 # input-from-web
 
-Use your phone's voice dictation to type into any app on your Windows, macOS, or Ubuntu/Linux desktop.
+Use your phone's voice dictation to type into any app on your Linux/Ubuntu, Windows, or macOS desktop.
 
 ## Motivation
 
@@ -43,41 +43,6 @@ Phone browser  ──HTTP POST──>  Python (Flask)  ──> platform injector
 | **pbcopy** (macOS) | Copies text to the macOS clipboard (clipboard method) |
 
 ## Installation
-
-### Windows (from source)
-
-```powershell
-# Requires Python 3.10+ on PATH (python or py launcher)
-git clone <repo-url>
-cd input-from-web
-.\run.bat
-```
-
-`run.bat` creates a venv, installs `flask` + `qrcode`, and starts the server.
-No ydotool / admin rights required — typing and clipboard use the Win32 APIs.
-
-You can also run the package entry once dependencies are installed:
-
-```powershell
-$env:PYTHONPATH = "$PWD\src"
-python -m input_from_web
-# or the compatibility shim
-python input-from-web.py
-```
-
-### Project layout
-
-```
-input-from-web.py          # thin compatibility shim
-macos-launcher.py          # entry point for the macOS .app bundle
-src/input_from_web/        # Python package (CLI, Flask, config, inject)
-  templates/index.html     # phone UI shell
-  static/                  # app.css, app.js, theme-init.js, icon.svg
-  backends/                # platform injectors: windows / linux / macos
-run.bat / run.sh           # venv bootstrap + python -m input_from_web
-setup.py                   # py2app config (macOS .app bundle)
-pyproject.toml
-```
 
 ### Linux (from source)
 
@@ -131,6 +96,41 @@ to your Applications folder. Launching the app opens a Terminal window showing
 the QR code. See [macOS notes](#macos-notes) for the Accessibility and
 Gatekeeper steps.
 
+### Windows (from source)
+
+```powershell
+# Requires Python 3.10+ on PATH (python or py launcher)
+git clone <repo-url>
+cd input-from-web
+.\run.bat
+```
+
+`run.bat` creates a venv, installs `flask` + `qrcode`, and starts the server.
+No ydotool / admin rights required — typing and clipboard use the Win32 APIs.
+
+You can also run the package entry once dependencies are installed:
+
+```powershell
+$env:PYTHONPATH = "$PWD\src"
+python -m input_from_web
+# or the compatibility shim
+python input-from-web.py
+```
+
+### Project layout
+
+```
+input-from-web.py          # thin compatibility shim
+macos-launcher.py          # entry point for the macOS .app bundle
+src/input_from_web/        # Python package (CLI, Flask, config, inject)
+  templates/index.html     # phone UI shell
+  static/                  # app.css, app.js, theme-init.js, icon.svg
+  backends/                # platform injectors: windows / linux / macos
+run.bat / run.sh           # venv bootstrap + python -m input_from_web
+setup.py                   # py2app config (macOS .app bundle)
+pyproject.toml
+```
+
 ## Usage
 
 ```bash
@@ -145,7 +145,7 @@ Gatekeeper steps.
 
 | Flag | Description |
 |---|---|
-| `--method type` | Simulate keystrokes (AppleScript on macOS, ydotool on Linux, SendInput on Windows). Default |
+| `--method type` | Simulate keystrokes (ydotool on Linux, SendInput on Windows, AppleScript on macOS). Default |
 | `--method clipboard` | Copy to system clipboard, you paste manually |
 | `--port PORT` | TCP port to listen on (default: 5123) |
 | `--profile NAME` | Use a named profile from the config file |
@@ -183,8 +183,8 @@ a `default` profile. You can add more profiles and switch between them.
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `method` | `"type"` or `"clipboard"` | `"type"` | Input injection method. Overridden by `--method` |
-| `auto_paste` | boolean | `false` | After clipboard copy, simulate a paste keystroke (Ctrl+V on Windows/Linux, Cmd+V on macOS). Only applies to `clipboard` method. Useful for GUI apps, not terminals |
-| `paste_key` | `"ctrl+v"` or `"ctrl+shift+v"` | `"ctrl+v"` | Paste shortcut simulated when `auto_paste` is on (Ctrl+Shift+V on Windows/Linux, Cmd+Shift+V on macOS). Only applies to `clipboard` method |
+| `auto_paste` | boolean | `false` | After clipboard copy, simulate a paste keystroke (Ctrl+V on Linux/Windows, Cmd+V on macOS). Only applies to `clipboard` method. Useful for GUI apps, not terminals |
+| `paste_key` | `"ctrl+v"` or `"ctrl+shift+v"` | `"ctrl+v"` | Paste shortcut simulated when `auto_paste` is on (Ctrl+Shift+V on Linux/Windows, Cmd+Shift+V on macOS). Only applies to `clipboard` method |
 | `auto_press_enter` | boolean | `false` | After injection, press Enter to submit (chat boxes, messengers, shells) |
 | `port` | integer | `5123` | TCP port. Overridden by `--port` |
 | `use_security_token` | boolean | `true` | Require secret token in URL. **Only disable on trusted networks** |
@@ -334,16 +334,16 @@ A red warning is printed at startup. Only do this on a network you fully control
 
 ## Requirements
 
-### Windows
-- Windows 10/11
-- Python 3.10+
-- Phone and computer on the same local network
-
 ### Linux
 - Ubuntu 24.04+ (or any Linux with ydotool; also works on X11)
 - Python 3.12+
 - ydotool + ydotoold (for keystroke injection)
 - wl-clipboard (for clipboard method)
+- Phone and computer on the same local network
+
+### Windows
+- Windows 10/11
+- Python 3.10+
 - Phone and computer on the same local network
 
 ### macOS
