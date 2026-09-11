@@ -21,6 +21,7 @@ dist/
 *.egg-info/
 .eggs/
 *.egg
+icon.icns
 
 # Debian packaging build artifacts (managed by debhelper)
 debian/.debhelper/

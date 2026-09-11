@@ -22,7 +22,7 @@ def main(argv=None) -> int:
         choices=["clipboard", "type"],
         default=None,
         help="Override profile method. type: simulate keystrokes "
-        "(ydotool on Linux, SendInput on Windows). "
+        "(ydotool on Linux, SendInput on Windows, AppleScript on macOS). "
         "clipboard: copy only (wl-copy / Windows clipboard).",
     )
     parser.add_argument(

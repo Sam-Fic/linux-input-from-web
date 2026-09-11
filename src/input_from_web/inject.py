@@ -2,7 +2,7 @@
 
 import time
 
-from .paths import IS_WIN
+from .paths import IS_MAC, IS_WIN
 from .state import Runtime
 
 
@@ -42,6 +42,27 @@ def inject_text(runtime: Runtime, text: str) -> None:
             if runtime.method == "type" and _is_ascii(payload):
                 time.sleep(0.05)
             win.win_press_enter()
+        return
+
+    if IS_MAC:
+        from .backends import macos
+
+        if runtime.auto_press_enter:
+            text = _strip_trailing_newlines(text)
+
+        if runtime.method == "type" and _is_ascii(text):
+            macos.macos_type_text(text)
+        else:
+            force_paste = runtime.method == "type" and not _is_ascii(text)
+            macos.copy_then_optional_paste(
+                text,
+                auto_paste=runtime.auto_paste,
+                force_paste=force_paste,
+                paste_key=runtime.paste_key,
+            )
+
+        if runtime.auto_press_enter:
+            macos.macos_press_enter()
         return
 
     from .backends import linux

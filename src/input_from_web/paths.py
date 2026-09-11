@@ -4,6 +4,7 @@ import os
 import sys
 
 IS_WIN = sys.platform == "win32"
+IS_MAC = sys.platform == "darwin"
 
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(PACKAGE_DIR, "static")
@@ -32,6 +33,9 @@ if IS_WIN:
         r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
     )
     AUTOSTART_FILE = os.path.join(AUTOSTART_DIR, "input-from-web.bat")
+elif IS_MAC:
+    AUTOSTART_DIR = os.path.expanduser("~/Library/LaunchAgents")
+    AUTOSTART_FILE = os.path.join(AUTOSTART_DIR, "com.input-from-web.plist")
 else:
     AUTOSTART_DIR = os.path.expanduser("~/.config/autostart")
     AUTOSTART_FILE = os.path.join(AUTOSTART_DIR, "input-from-web.desktop")

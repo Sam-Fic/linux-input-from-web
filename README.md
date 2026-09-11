@@ -1,6 +1,6 @@
 # input-from-web
 
-Use your phone's voice dictation to type into any app on your Windows or Ubuntu/Linux desktop.
+Use your phone's voice dictation to type into any app on your Windows, macOS, or Ubuntu/Linux desktop.
 
 ## Motivation
 
@@ -15,8 +15,9 @@ No app install needed on the phone — just a browser.
 
 ```
 Phone browser  ──HTTP POST──>  Python (Flask)  ──> platform injector
-                                    │                 Linux: ydotool / wl-copy
+                                    │                 Linux:   ydotool / wl-copy
                                     │                 Windows: SendInput / clipboard
+                                    │                 macOS:   AppleScript / pbcopy
                               Prints QR code
                               + secret token URL
                               on startup
@@ -38,6 +39,8 @@ Phone browser  ──HTTP POST──>  Python (Flask)  ──> platform injector
 | **wl-clipboard** (Linux) | Copies text to the Wayland clipboard (clipboard method) |
 | **ydotoold** (Linux) | Daemon required by ydotool, needs access to `/dev/uinput` |
 | **Win32 SendInput / clipboard** (Windows) | Keystroke injection and clipboard via ctypes — no extra native tools |
+| **AppleScript / System Events** (macOS) | Keystroke injection via the built-in `osascript` — no extra native tools |
+| **pbcopy** (macOS) | Copies text to the macOS clipboard (clipboard method) |
 
 ## Installation
 
@@ -66,10 +69,13 @@ python input-from-web.py
 
 ```
 input-from-web.py          # thin compatibility shim
+macos-launcher.py          # entry point for the macOS .app bundle
 src/input_from_web/        # Python package (CLI, Flask, config, inject)
   templates/index.html     # phone UI shell
   static/                  # app.css, app.js, theme-init.js, icon.svg
+  backends/                # platform injectors: windows / linux / macos
 run.bat / run.sh           # venv bootstrap + python -m input_from_web
+setup.py                   # py2app config (macOS .app bundle)
 pyproject.toml
 ```
 
@@ -104,6 +110,26 @@ sudo apt install debhelper dh-python
 dpkg-buildpackage -us -uc -b
 # Package is created in the parent directory
 ```
+
+### macOS (from source)
+
+```bash
+# Requires Python 3.10+ (python.org or Homebrew)
+git clone <repo-url> && cd linux-input-from-web
+python3 -m venv venv
+venv/bin/pip install flask qrcode
+
+# Run (a Terminal window shows the QR code)
+./run.sh
+```
+
+### macOS (.app bundle / DMG)
+
+Download the `input-from-web-<version>-macos-<arch>.dmg` artifact from
+**GitHub Actions** (or a matching Release), open it and drag **Input from Web**
+to your Applications folder. Launching the app opens a Terminal window showing
+the QR code. See [macOS notes](#macos-notes) for the Accessibility and
+Gatekeeper steps.
 
 ## Usage
 
@@ -315,6 +341,32 @@ A red warning is printed at startup. Only do this on a network you fully control
 - ydotool + ydotoold (for keystroke injection)
 - wl-clipboard (for clipboard method)
 - Phone and computer on the same local network
+
+### macOS
+- macOS 11+ (Big Sur or newer)
+- Python 3.10+ (python.org installer or Homebrew)
+- Accessibility permission for the terminal/app (only for `type` method,
+  auto-paste and auto-Enter)
+- Phone and computer on the same local network
+
+## macOS notes
+
+- **Direct typing**: uses AppleScript `System Events` via the built-in
+  `osascript`, so no extra binaries are needed. Requires granting
+  **Accessibility** permission to the terminal app (or the bundled app) in
+  `System Settings → Privacy & Security → Accessibility`. The system prompts
+  on first use; if typing does nothing, check that the toggle is on.
+- **Clipboard mode**: text is copied with `pbcopy`; optional auto-paste
+  simulates Cmd+V (or Cmd+Shift+V) via AppleScript. Clipboard-only mode works
+  without any permission grant.
+- **Non-ASCII fallback**: like Windows/Linux, non-ASCII text (e.g. Chinese) is
+  injected via clipboard + Cmd+V.
+- **Gatekeeper**: CI builds are signed ad-hoc (no Developer ID), so macOS may
+  quarantine a downloaded build — right-click the app in Finder → **Open**, or
+  run `xattr -dr com.apple.quarantine "/Applications/Input from Web.app"`.
+- **Auto-start**: `--install-autostart` installs a LaunchAgent
+  (`~/Library/LaunchAgents/com.input-from-web.plist`) that opens a Terminal
+  window running `run.sh` at login. Remove with `--uninstall-autostart`.
 
 ## Windows notes
 

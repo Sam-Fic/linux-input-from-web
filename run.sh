@@ -3,12 +3,15 @@ set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Ensure ydotoold is running (needs /dev/uinput access)
-if ! pgrep -x ydotoold > /dev/null 2>&1; then
-    echo "Starting ydotoold (requires sudo for /dev/uinput)..."
-    sudo ydotoold &
-    sleep 0.5
-    echo "ydotoold started."
+# ydotool is Linux-only; macOS uses the built-in AppleScript/pbcopy backends.
+if [ "$(uname -s)" != "Darwin" ]; then
+    # Ensure ydotoold is running (needs /dev/uinput access)
+    if ! pgrep -x ydotoold > /dev/null 2>&1; then
+        echo "Starting ydotoold (requires sudo for /dev/uinput)..."
+        sudo ydotoold &
+        sleep 0.5
+        echo "ydotoold started."
+    fi
 fi
 
 # Ensure virtual environment exists

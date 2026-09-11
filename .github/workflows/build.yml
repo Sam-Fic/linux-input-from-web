@@ -1,0 +1,119 @@
+name: build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Syntax & smoke checks (ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime deps
+        run: pip install flask qrcode
+      - name: Compile all Python sources
+        run: |
+          python -m py_compile input-from-web.py macos-launcher.py setup.py \
+            src/input_from_web/*.py src/input_from_web/backends/*.py
+      - name: CLI help smoke test
+        run: PYTHONPATH=src python -m input_from_web --help
+      - name: Flask app smoke test (test client)
+        run: |
+          PYTHONPATH=src python - <<'EOF'
+          from input_from_web.state import Runtime
+          from input_from_web.web import create_app
+          rt = Runtime(token="t", method="clipboard")
+          c = create_app(rt).test_client()
+          assert c.get("/ping").get_json() == {"ok": True}
+          r = c.get("/")
+          assert r.status_code == 200 and b"__CONFIG__" not in r.data
+          print("Flask smoke OK")
+          EOF
+      - name: macOS backend script-builder unit check
+        run: |
+          PYTHONPATH=src python - <<'EOF'
+          from input_from_web.backends import macos
+          calls = []
+          macos._osascript = calls.append
+          macos.macos_type_text('Say "hi"\ttab\nnext\r\nCRLF')
+          assert len(calls) == 1, calls
+          s = calls[0]
+          assert 'keystroke "Say \\"hi\\""' in s
+          assert "key code 48" in s
+          assert "key code 36" in s
+          assert "CRLF" in s
+          macos.macos_paste_chord("ctrl+shift+v")
+          assert "command down, shift down" in calls[1]
+          macos.macos_press_enter()
+          assert "key code 36" in calls[2]
+          print("macOS backend unit check OK")
+          EOF
+
+  build-macos:
+    name: Build macOS (${{ matrix.os }})
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-13, arch: x86_64 }
+          - { os: macos-14, arch: arm64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create icon.icns from icon.png
+        run: |
+          set -euxo pipefail
+          sips -c 764 764 icon.png --out icon-square.png
+          mkdir -p icon.iconset
+          for s in 16 32 128 256 512; do
+            sips -z $s $s icon-square.png --out icon.iconset/icon_${s}x${s}.png >/dev/null
+            d=$((s * 2))
+            sips -z $d $d icon-square.png --out icon.iconset/icon_${s}x${s}@2x.png >/dev/null
+          done
+          iconutil -c icns icon.iconset -o icon.icns
+          ls -la icon.icns
+      - name: Build wheel + sdist
+        run: |
+          pip install --upgrade pip build
+          python -m build --outdir dist
+      - name: Build standalone .app (py2app)
+        run: |
+          pip install py2app
+          python setup.py py2app
+      - name: Sanity check the .app bundle
+        run: |
+          set -euxo pipefail
+          if [ ! -d "dist/Input from Web.app" ]; then
+            mv dist/macos-launcher.app "dist/Input from Web.app"
+          fi
+          PY="python$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+          APP="dist/Input from Web.app"
+          "$APP/Contents/MacOS/macos-launcher" --help | head -30
+          echo "--- locate packaged templates/static (diagnostic) ---"
+          find "$APP/Contents/Resources" -name index.html -o -name app.js | head -10
+          test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/templates/index.html"
+          test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/static/app.js"
+      - name: Package .app as DMG
+        run: |
+          hdiutil create -volname "Input from Web" \
+            -srcfolder "dist/Input from Web.app" \
+            -ov -format UDZO "dist/input-from-web-0.1.0-macos-${{ matrix.arch }}.dmg"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: input-from-web-0.1.0-macos-${{ matrix.arch }}
+          path: |
+            dist/*.dmg
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error

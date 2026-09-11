@@ -4,9 +4,12 @@ import os
 import shlex
 import shutil
 
+from xml.sax.saxutils import escape
+
 from .paths import (
     AUTOSTART_DIR,
     AUTOSTART_FILE,
+    IS_MAC,
     IS_WIN,
     SCRIPT_DIR,
 )
@@ -80,6 +83,28 @@ if exist "{script_dir}\\run.bat" (
 )
 """
 
+MAC_AUTOSTART_TEMPLATE = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" \
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.input-from-web</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/osascript</string>
+        <string>-e</string>
+        <string>tell application "Terminal" to do script "{script_path}"</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
+</dict>
+</plist>
+"""
+
 
 def install_autostart():
     """Create the user autostart entry for this OS. Returns (ok, message)."""
@@ -87,6 +112,14 @@ def install_autostart():
         os.makedirs(AUTOSTART_DIR, exist_ok=True)
         content = WIN_AUTOSTART_TEMPLATE.format(script_dir=SCRIPT_DIR)
         with open(AUTOSTART_FILE, "w", encoding="utf-8", newline="\r\n") as f:
+            f.write(content)
+        return True, f"Autostart installed: {AUTOSTART_FILE}"
+
+    if IS_MAC:
+        os.makedirs(AUTOSTART_DIR, exist_ok=True)
+        script_path = escape(os.path.join(SCRIPT_DIR, "run.sh"))
+        content = MAC_AUTOSTART_TEMPLATE.format(script_path=script_path)
+        with open(AUTOSTART_FILE, "w", encoding="utf-8") as f:
             f.write(content)
         return True, f"Autostart installed: {AUTOSTART_FILE}"
 
