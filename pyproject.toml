@@ -1,23 +1,9 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
-[project]
-name = "input-from-web"
-version = "0.1.0"
-description = "Type on your phone, inject into focused desktop app"
-readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-  "flask",
-  "qrcode",
-]
-
-[project.scripts]
-input-from-web = "input_from_web.cli:main"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-input_from_web = ["templates/*", "static/*"]
+[tool.setuptools_scm]
+write_to = "src/input_from_web/_version.py"
+fallback_version = "0.1.0"
+version_scheme = "no-guess-dev"
+local_scheme = "no-local-version"

@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -68,6 +70,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -83,6 +87,10 @@ jobs:
           done
           iconutil -c icns icon.iconset -o icon.icns
           ls -la icon.icns
+      - name: Resolve version (setuptools-scm)
+        run: |
+          pip install setuptools-scm
+          echo "IFW_VERSION=$(python -c 'from setuptools_scm import get_version; print(get_version(root=".", fallback_version="0.1.0"))')" >> "$GITHUB_ENV"
       - name: Build wheel + sdist
         run: |
           pip install --upgrade pip build
@@ -90,12 +98,8 @@ jobs:
       - name: Build standalone .app (py2app)
         run: |
           set -euxo pipefail
-          pip install py2app flask qrcode
-          # py2app >= 0.28.9 rejects install_requires, which setuptools derives
-          # from pyproject.toml [project] dependencies; hide it during py2app.
-          mv pyproject.toml pyproject.toml.bak
+          pip install setuptools-scm py2app flask qrcode
           python setup.py py2app
-          mv pyproject.toml.bak pyproject.toml
       - name: Sanity check the .app bundle
         run: |
           set -euxo pipefail
@@ -108,15 +112,16 @@ jobs:
           find "$APP/Contents/Resources" -name index.html -o -name app.js | head -10
           test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/templates/index.html"
           test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/static/app.js"
+          test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/_version.py"
       - name: Package .app as DMG
         run: |
           hdiutil create -volname "Input from Web" \
             -srcfolder "dist/Input from Web.app" \
-            -ov -format UDZO "dist/input-from-web-0.1.0-macos-${{ matrix.arch }}.dmg"
+            -ov -format UDZO "dist/input-from-web-${{ env.IFW_VERSION }}-macos-${{ matrix.arch }}.dmg"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: input-from-web-0.1.0-macos-${{ matrix.arch }}
+          name: input-from-web-${{ env.IFW_VERSION }}-macos-${{ matrix.arch }}
           path: |
             dist/*.dmg
             dist/*.whl

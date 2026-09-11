@@ -22,6 +22,7 @@ dist/
 .eggs/
 *.egg
 icon.icns
+src/input_from_web/_version.py
 
 # Debian packaging build artifacts (managed by debhelper)
 debian/.debhelper/
