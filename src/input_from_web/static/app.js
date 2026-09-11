@@ -13,7 +13,7 @@ try {
     window.__M3E_BOOT_ERROR__ = String((err && err.message) || err);
     const banner = document.createElement('div');
     banner.textContent = 'Failed to load UI components: ' + window.__M3E_BOOT_ERROR__;
-    banner.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;background:#b3261e;color:#fff;'
+    banner.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;background:var(--md-sys-color-error,#b3261e);color:var(--md-sys-color-on-error,#fff);'
       + 'padding:12px 16px;border-radius:12px;z-index:9999;font-size:14px;line-height:1.4';
     document.body.appendChild(banner);
     throw err;
@@ -34,6 +34,18 @@ try {
 
   // The theme element drives the entire dynamic-color palette + light/dark scheme.
   const appTheme = document.getElementById('app-theme');
+
+  // Feed the saved accent seed into <m3e-theme> immediately, BEFORE the first
+  // scheduleTokenSync() (below) mirrors tokens onto :root. Otherwise the initial
+  // sync would mirror the Material default purple (#6750A4) still sitting in
+  // appTheme.color, briefly overwriting the user color pre-applied by theme-init.js
+  // and flashing purple on first paint.
+  if (appTheme) {
+    try {
+      const _saved = localStorage.getItem("input-from-web-theme-color");
+      if (_saved && _saved !== "material") appTheme.color = _saved;
+    } catch (e) {}
+  }
 
   // Pull getColorFromImage (used by "extract from image") from the theme module.
   const { getColorFromImage } = await import('@m3e/web/theme');
@@ -403,6 +415,8 @@ function clearText() {
 async function doSend() {
   const text = txt.value;
   if (!text) return;
+  // 离线时按钮为“强调色灰色态”不可发送，点击直接忽略（避免发起必定失败的请求）。
+  if (!isConnected) return;
   isSending = true;
   transient = false;
   updateButtonState();
@@ -467,11 +481,16 @@ function updateButtonState() {
     // 不被每秒一次的 ping（updateButtonState）覆盖回上一个状态。
     btn.disabled = true;
   } else if (!isConnected) {
+    // 离线：保持按钮真正 disabled（不触发按下水波、不闪现启用态的强调色），
+    // 配色由 .btn-offline 用 m3e 禁用令牌改写为强调色淡色调（primary-container 家族）。
+    // 实际发送已在 doSend 顶部用 isConnected 守卫拦截。
     btn.disabled = true;
+    btn.classList.add("btn-offline");
     setBtnIcon("wifi_off");
     setBtnLabel(t("offline"));
   } else {
     btn.disabled = false;
+    btn.classList.remove("btn-offline");
     setBtnIcon("send");
     setBtnLabel(t("send"));
   }

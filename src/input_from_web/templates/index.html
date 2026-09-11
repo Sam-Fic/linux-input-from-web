@@ -21,6 +21,15 @@
 <body>
 <div id="theme-host" style="display:contents">
 <m3e-theme id="app-theme" variant="tonal-spot" color="#6750A4" scheme="auto" style="display:contents">
+<!-- Seed <m3e-theme> with the saved accent BEFORE it upgrades, so it generates the
+     user palette from the very first paint (no Material-default-purple flash during load).
+     app.js later re-applies the same value; this just removes the dependency on its timing. -->
+<script>
+  try {
+    var _c = localStorage.getItem("input-from-web-theme-color");
+    if (_c && _c !== "material") document.getElementById("app-theme").setAttribute("color", _c);
+  } catch (e) {}
+</script>
 <div class="app-container">
   <div class="btn-row">
     <m3e-button id="btn" variant="filled" size="large">

@@ -192,6 +192,17 @@
   .btn-row m3e-button#btn {
     --m3e-button-shape-pressed-morph: 16px;
   }
+  /* 离线（未连接）状态：保持按钮真正 disabled（不触发按下水波、不闪现启用态的强调色），
+     但把 m3e 的禁用配色令牌改写为强调色的淡色调（primary-container 家族），
+     形成“在强调色家族内的灰色态”，随用户自定义的主题色与深浅模式变化。
+     注意：m3e 禁用态读的是 --m3e-button-disabled-* 专属令牌（默认取生成的 onSurface），
+     而非 --md-sys-color-primary，因此需在此覆盖。opacity:1 抵消下方[disabled]的 0.38 二次变暗。 */
+  .btn-row m3e-button#btn.btn-offline {
+    opacity: 1;
+    --m3e-button-disabled-container-color: var(--md-sys-color-primary-container, #EADDFF);
+    --m3e-button-disabled-label-text-color: var(--md-sys-color-on-primary-container, #21005D);
+    --m3e-button-disabled-icon-color: var(--md-sys-color-on-primary-container, #21005D);
+  }
   /* SEND 按钮使用组件默认字体显示文字（不指定特殊图标字体，避免连字问题）。 */
   /* Success feedback: the icon flies out of the clipped wrapper and the new
      one flies back in. */
