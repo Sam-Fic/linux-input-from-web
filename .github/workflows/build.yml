@@ -89,8 +89,13 @@ jobs:
           python -m build --outdir dist
       - name: Build standalone .app (py2app)
         run: |
-          pip install py2app
+          set -euxo pipefail
+          pip install py2app flask qrcode
+          # py2app >= 0.28.9 rejects install_requires, which setuptools derives
+          # from pyproject.toml [project] dependencies; hide it during py2app.
+          mv pyproject.toml pyproject.toml.bak
           python setup.py py2app
+          mv pyproject.toml.bak pyproject.toml
       - name: Sanity check the .app bundle
         run: |
           set -euxo pipefail
