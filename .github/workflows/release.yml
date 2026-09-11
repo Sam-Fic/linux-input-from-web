@@ -1,0 +1,104 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag to attach the release to (e.g. v0.1.0). The tag must already exist."
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & publish GitHub Release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create icon.icns from icon.png
+        run: |
+          set -euxo pipefail
+          sips -c 764 764 icon.png --out icon-square.png
+          mkdir -p icon.iconset
+          for s in 16 32 128 256 512; do
+            sips -z $s $s icon-square.png --out icon.iconset/icon_${s}x${s}.png >/dev/null
+            d=$((s * 2))
+            sips -z $d $d icon-square.png --out icon.iconset/icon_${s}x${s}@2x.png >/dev/null
+          done
+          iconutil -c icns icon.iconset -o icon.icns
+          ls -la icon.icns
+      - name: Resolve version (setuptools-scm)
+        run: |
+          pip install setuptools-scm
+          echo "IFW_VERSION=$(python -c 'from setuptools_scm import get_version; print(get_version(root=".", fallback_version="0.1.0"))')" >> "$GITHUB_ENV"
+      - name: Run unit tests
+        run: |
+          pip install flask qrcode pytest
+          python -m pytest -q
+      - name: Build wheel + sdist
+        run: |
+          pip install --upgrade pip build
+          python -m build --outdir dist
+      - name: Build standalone .app (py2app)
+        run: |
+          set -euxo pipefail
+          pip install setuptools-scm py2app flask qrcode
+          python setup.py py2app
+      - name: Sanity check the .app bundle
+        run: |
+          set -euxo pipefail
+          PY="python$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+          APP="dist/Input from Web.app"
+          APP_BIN="$APP/Contents/MacOS/Input from Web"
+          test -x "$APP_BIN"
+          "$APP_BIN" --help | head -30
+          find "$APP/Contents/Resources" -name index.html -o -name app.js | head -10
+          test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/templates/index.html"
+          test -f "$APP/Contents/Resources/lib/$PY/site-packages/input_from_web/static/app.js"
+          test -f "$APP/Contents/Resources/lib/$PY/input_from_web/_version.py"
+      - name: Package .app as DMG
+        run: |
+          set -euxo pipefail
+          pkill -f "Input from Web.app" 2>/dev/null || true
+          APP="dist/Input from Web.app"
+          DMG="dist/input-from-web-${{ env.IFW_VERSION }}-macos-arm64.dmg"
+          for attempt in 1 2 3 4; do
+            if hdiutil create -volname "Input from Web" \
+              -srcfolder "$APP" \
+              -ov -format UDZO "$DMG"; then
+              break
+            fi
+            echo "hdiutil attempt $attempt failed, retrying in 5s..."
+            sleep 5
+          done
+          test -f "$DMG" && ls -la "$DMG"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          # Tag-triggered runs derive the tag from the ref; manual runs use the
+          # workflow_dispatch input (the tag must already exist in the repo).
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [ -z "$TAG" ] || [ "$TAG" = "$GITHUB_REF" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; updating assets only"
+            gh release upload "$TAG" dist/*.dmg dist/*.whl dist/*.tar.gz \
+              --clobber
+          else
+            gh release create "$TAG" dist/*.dmg dist/*.whl dist/*.tar.gz \
+              --title "input-from-web $TAG" \
+              --notes "Automated build of input-from-web $TAG (macOS arm64 .app DMG + wheel + sdist)."
+          fi
+          gh release view "$TAG" --json assets --jq '.assets[].name'

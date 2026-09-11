@@ -37,29 +37,27 @@ jobs:
           assert r.status_code == 200 and b"__CONFIG__" not in r.data
           print("Flask smoke OK")
           EOF
-      - name: macOS backend script-builder unit check
-        run: |
-          PYTHONPATH=src python - <<'EOF'
-          from input_from_web.backends import macos
-          calls = []
-          macos._osascript = calls.append
-          macos.macos_type_text('Say "hi"\ttab\nnext\r\nCRLF')
-          assert len(calls) == 1, calls
-          s = calls[0]
-          assert 'keystroke "Say \\"hi\\""' in s
-          assert "key code 48" in s
-          assert "key code 36" in s
-          assert "CRLF" in s
-          macos.macos_paste_chord("ctrl+shift+v")
-          assert "command down, shift down" in calls[1]
-          macos.macos_press_enter()
-          assert "key code 36" in calls[2]
-          print("macOS backend unit check OK")
-          EOF
+
+  test:
+    name: Unit tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install flask qrcode pytest
+      - name: Run pytest (all backends + inject + config)
+        run: python -m pytest -q
 
   build-macos:
     name: Build macOS (${{ matrix.os }})
-    needs: check
+    needs: [check, test]
     strategy:
       fail-fast: false
       matrix:
