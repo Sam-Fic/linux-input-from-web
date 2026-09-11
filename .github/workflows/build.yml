@@ -62,9 +62,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-13, arch: x86_64 }
-          - { os: macos-14, arch: arm64 }
+          # macos-13 (Intel x86_64) has very long public-repo queues; best effort.
+          - { os: macos-13, arch: x86_64, best_effort: true }
+          - { os: macos-14, arch: arm64, best_effort: false }
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.best_effort }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

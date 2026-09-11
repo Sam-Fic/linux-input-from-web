@@ -25,8 +25,14 @@ setup(
     package_data={"input_from_web": ["templates/*", "static/*"]},
     app=["macos-launcher.py"],
     data_files=[
-        (f"{SITE}/templates", [str(p) for p in (PKG_DIR / "templates").glob("*")]),
-        (f"{SITE}/static", [str(p) for p in (PKG_DIR / "static").glob("*")]),
+        (
+            f"{SITE}/templates",
+            [str(p.relative_to(HERE)) for p in (PKG_DIR / "templates").glob("*")],
+        ),
+        (
+            f"{SITE}/static",
+            [str(p.relative_to(HERE)) for p in (PKG_DIR / "static").glob("*")],
+        ),
     ],
     options={
         "py2app": {
