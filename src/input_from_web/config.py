@@ -91,12 +91,12 @@ def load_or_create_config(profile_name=None):
     Returns (profile, profile_name, full_config).
     """
     if not os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, "w") as f:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(DEFAULT_CONFIG, f, indent=2, ensure_ascii=False)
         print(f"  Created default config: {CONFIG_PATH}")
         config = DEFAULT_CONFIG
     else:
-        with open(CONFIG_PATH) as f:
+        with open(CONFIG_PATH, encoding="utf-8") as f:
             config = json.load(f)
 
     if profile_name is None:
@@ -117,5 +117,5 @@ def load_or_create_config(profile_name=None):
 
 def save_config(config):
     """Write config back to disk."""
-    with open(CONFIG_PATH, "w") as f:
+    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
